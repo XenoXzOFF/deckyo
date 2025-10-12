@@ -29,7 +29,8 @@ PRESET_MESSAGES = {
         "title": "✨ Nouvelles fonctionnalités",
         "description": (
             "De nouvelles fonctionnalités ont été ajoutées au bot !\n"
-            "N'hésitez pas à ouvrir un ticket pour les découvrir et poser vos questions."
+            "N'hésitez pas à ouvrir un ticket pour les découvrir et poser vos questions.\n"
+            "Vous pouvez aller voir les nouveautés avec la commande `/changelog`."
         ),
         "color": discord.Color.green()
     }
