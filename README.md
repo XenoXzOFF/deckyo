@@ -1,4 +1,4 @@
-![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)](LICENSE)
 
 FR :
 
