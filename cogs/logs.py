@@ -3,6 +3,7 @@ from discord.ext import commands
 import datetime
 import traceback
 import asyncio
+import os
 
 LOG_CHANNEL_ID = os.getenv('LOG_CHANNEL_ID')
 
