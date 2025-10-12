@@ -9,10 +9,10 @@ from discord.ui import Button, View
 import asyncio
 
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
-SUPPORT_GUILD_ID = os.getenv('SUPPORT_GUILD_ID')
-TICKET_CATEGORY_ID = os.getenv('TICKET_CATEGORY_ID')
-SUPPORT_LOG_CHANNEL_ID = os.getenv('SUPPORT_LOG_CHANNEL_ID')
-STAFF_ROLE_ID = os.getenv('STAFF_ROLE_ID')
+SUPPORT_GUILD_ID = int(os.getenv('SUPPORT_GUILD_ID'))
+TICKET_CATEGORY_ID = int(os.getenv('TICKET_CATEGORY_ID'))
+SUPPORT_LOG_CHANNEL_ID = int(os.getenv('SUPPORT_LOG_CHANNEL_ID'))
+STAFF_ROLE_ID = int(os.getenv('STAFF_ROLE_ID'))
 
 class CloseTicketView(View):
     def __init__(self, bot):

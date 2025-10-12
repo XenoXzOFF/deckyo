@@ -5,7 +5,7 @@ import traceback
 import asyncio
 import os
 
-LOG_CHANNEL_ID = 1426947585473511546
+LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
 
 class FullLogs(commands.Cog):
     def __init__(self, bot):
