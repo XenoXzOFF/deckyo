@@ -19,8 +19,6 @@ class ErrorHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.CommandNotFound):
-            return  # Ignorer les erreurs de commande non trouvée
 
         embed = discord.Embed(title="❗ Erreur de commande", color=discord.Color.red(), timestamp=datetime.datetime.utcnow())
         embed.add_field(name="Utilisateur", value=f"{ctx.author} ({ctx.author.id})", inline=False)
