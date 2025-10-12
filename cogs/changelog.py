@@ -3,28 +3,46 @@ from discord.ext import commands
 from discord import app_commands
 import datetime
 import asyncio
-import os
+import aiohttp
 
-# Prends les derniers changements effectués dans le bot avec la repositorie GitHub
-# Envoies les changelogs dans un embed
-
-GITHUB_REPO_URL = int(os.getenv('GITHUB_REPO_URL'))
+# URL de l'API GitHub pour récupérer les commits
+GITHUB_API_URL = "https://api.github.com/repos/XenoXzOFF/deckyo/commits"
 
 class Changelog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.session = aiohttp.ClientSession()
 
-    @app_commands.command(name="changelog", description="Affiche les derniers changements du bot")
+    def cog_unload(self):
+        # Ferme proprement la session aiohttp quand le cog est déchargé
+        asyncio.create_task(self.session.close())
+
+    @app_commands.command(
+        name="changelog",
+        description="Affiche les 5 derniers changements du bot depuis GitHub"
+    )
     async def changelog(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        
-        # Récupère les 5 derniers commits depuis la repo GitHub
-        async with self.bot.session.get(f"{GITHUB_REPO_URL}/commits") as response:
-            if response.status != 200:
-                await interaction.followup.send("Impossible de récupérer les changements pour le moment.", ephemeral=True)
-                return
-            commits = await response.json()
 
+        try:
+            async with self.session.get(GITHUB_API_URL) as response:
+                if response.status != 200:
+                    await interaction.followup.send(
+                        "Impossible de récupérer les changements pour le moment.",
+                        ephemeral=True
+                    )
+                    return
+
+                commits = await response.json()  # JSON des commits
+
+        except Exception as e:
+            await interaction.followup.send(
+                f"Erreur lors de la récupération des commits : {e}",
+                ephemeral=True
+            )
+            return
+
+        # Crée l'embed pour Discord
         embed = discord.Embed(
             title="📜 Derniers changements",
             description="Voici les 5 derniers changements effectués dans le bot :",
@@ -45,6 +63,6 @@ class Changelog(commands.Cog):
 
         embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
         await interaction.followup.send(embed=embed, ephemeral=True)
-        
+
 async def setup(bot):
     await bot.add_cog(Changelog(bot))
