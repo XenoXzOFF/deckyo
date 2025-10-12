@@ -45,5 +45,6 @@ class Changelog(commands.Cog):
 
         embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
         await interaction.followup.send(embed=embed, ephemeral=True)
+        
 async def setup(bot):
     await bot.add_cog(Changelog(bot))
