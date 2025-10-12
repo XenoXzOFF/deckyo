@@ -40,3 +40,6 @@ class ErrorHandler(commands.Cog):
         embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
 
         await self.send_error_log(embed)
+
+async def setup(bot):
+    await bot.add_cog(ErrorHandler(bot))
