@@ -7,7 +7,7 @@ import os
 
 LOG_INVITE_CHANNEL_ID = int(os.getenv('LOG_INVITE_CHANNEL_ID'))
 
-class FullLogs(commands.Cog):
+class InviteLogs(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -37,4 +37,4 @@ class FullLogs(commands.Cog):
         await self.send_log(embed)
 
 async def setup(bot):
-    await bot.add_cog(FullLogs(bot))
+    await bot.add_cog(InviteLogs(bot))
