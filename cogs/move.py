@@ -7,60 +7,50 @@ import datetime
 
 # Déplace les membres entre les salons vocaux
 # Utilisable uniquement par les personnes avec la permission "Déplacer les membres" ainsi que par les OWNER_IDS
+# J'aimerais déplacer un membre en particulier en choisissant le salon de destination
+# Les OWNER_IDS peuvent déplacer n'importe qui et nimporte où
+# Je ne veux plus le source channel, juste le membre et le destination channel
 
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
+MOVE_COOLDOWN = 10  # secondes
 
 class Move(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.last_move_time = None
+        self.move_lock = asyncio.Lock()
 
-    @app_commands.command(name="move", description="Déplace les membres entre les salons vocaux")
-    @app_commands.describe(
-        source_channel="Le salon vocal source",
-        target_channel="Le salon vocal cible"
-    )
-    async def move(self, interaction: discord.Interaction, source_channel: discord.VoiceChannel, target_channel: discord.VoiceChannel):
-        # Vérifie si l'utilisateur a la permission de déplacer les membres
+    @app_commands.command(name="move", description="Déplace un membre vers un autre salon vocal")
+    @app_commands.describe(member="Le membre à déplacer", destination="Le salon vocal de destination")
+    async def move(self, interaction: discord.Interaction, member: discord.Member, destination: discord.VoiceChannel):
         if not interaction.user.guild_permissions.move_members and interaction.user.id not in OWNER_IDS:
-            await interaction.response.send_message("Vous n'avez pas la permission de déplacer des membres.", ephemeral=True)
+            await interaction.response.send_message("🚫 Tu n'as pas la permission de déplacer des membres.", ephemeral=True)
             return
 
-        # Vérifie si le bot a la permission de déplacer les membres
-        if not interaction.guild.me.guild_permissions.move_members:
-            await interaction.response.send_message("Je n'ai pas la permission de déplacer des membres.", ephemeral=True)
+        if member.voice is None:
+            await interaction.response.send_message(f"⚠️ {member.mention} n'est pas dans un salon vocal.", ephemeral=True)
             return
 
-        # Vérifie si le salon source et le salon cible sont différents
-        if source_channel.id == target_channel.id:
-            await interaction.response.send_message("Le salon source et le salon cible doivent être différents.", ephemeral=True)
+        if member.voice.channel == destination:
+            await interaction.response.send_message(f"⚠️ {member.mention} est déjà dans {destination.mention}.", ephemeral=True)
             return
 
-        # Récupère les membres dans le salon source
-        members_to_move = source_channel.members
-
-        if not members_to_move:
-            await interaction.response.send_message("Il n'y a aucun membre à déplacer dans le salon source.", ephemeral=True)
-            return
-
-        # Déplace les membres vers le salon cible
-        for member in members_to_move:
-            try:
-                await member.move_to(target_channel)
-            except Exception as e:
-                await interaction.response.send_message(f"Impossible de déplacer {member.display_name}: {e}", ephemeral=True)
+        async with self.move_lock:
+            now = datetime.datetime.utcnow()
+            if self.last_move_time and (now - self.last_move_time).total_seconds() < MOVE_COOLDOWN:
+                wait_time = MOVE_COOLDOWN - (now - self.last_move_time).total_seconds()
+                await interaction.response.send_message(f"⏳ Veuillez attendre {wait_time:.1f} secondes avant de déplacer à nouveau.", ephemeral=True)
                 return
 
-        await interaction.response.send_message(f"Déplacé {len(members_to_move)} membre(s) de {source_channel.name} à {target_channel.name}.", ephemeral=True)
-        return
-        # Déplace les membres vers le salon cible
-        for member in members_to_move:
             try:
-                await member.move_to(target_channel)
+                await member.move_to(destination)
+                self.last_move_time = now
+                await interaction.response.send_message(f"✅ {member.mention} a été déplacé vers {destination.mention}.", ephemeral=True)
             except Exception as e:
-                await interaction.response.send_message(f"Impossible de déplacer {member.display_name}: {e}", ephemeral=True)
+                await interaction.response.send_message(f"❌ Impossible de déplacer {member.mention}: {str(e)}", ephemeral=True)
                 return
-        await interaction.response.send_message(f"Déplacé {len(members_to_move)} membre(s) de {source_channel.name} à {target_channel.name}.", ephemeral=True)
-        return
+            await asyncio.sleep(MOVE_COOLDOWN)
+            self.last_move_time = None
 
 async def setup(bot):
     await bot.add_cog(Move(bot))

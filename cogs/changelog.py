@@ -61,7 +61,7 @@ class Changelog(commands.Cog):
                 inline=False
             )
 
-        embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot):

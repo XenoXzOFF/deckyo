@@ -70,7 +70,7 @@ class MaJ(commands.Cog):
             color=message_template["color"],
             timestamp=datetime.datetime.utcnow()
         )
-        embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
 
         progress_msg = await interaction.followup.send(
             "⏳ Envoi des messages aux propriétaires en cours...\n⚠️ Délai de 25 secondes entre chaque envoi", 

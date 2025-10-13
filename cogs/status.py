@@ -17,11 +17,14 @@ ACTIVITY_CHOICES = [
 class Status(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.status_messages = None 
-        self.change_status_loop.start()
+        self.status_messages = None
         self.temp_status_task = None
         self.is_temp_status = False
         self.update_status_info()
+
+    async def cog_load(self):
+        """Démarre la tâche quand le cog est chargé"""
+        self.change_status_loop.start()
 
     def count_lines_of_code(self):
         total_lines = 0
@@ -37,18 +40,14 @@ class Status(commands.Cog):
         return total_lines
 
     def count_commands(self):
-        command_count = 0
-        for command in self.bot.tree.walk_commands():
-            command_count += 1
-        return command_count
+        return len(list(self.bot.tree.walk_commands()))
 
     def update_status_info(self):
         lines = self.count_lines_of_code()
-        commands = self.count_commands()
+        commands_count = self.count_commands()
         guilds = len(self.bot.guilds)
-        
         self.status_messages = itertools.cycle([
-            f"+ {commands} commandes disponibles ⚡",
+            f"+ {commands_count} commandes disponibles ⚡",
             f"{lines} lignes de code 💻",
             f"{guilds} serveurs 🌐",
             "besoin d'aide? /support 📬",
@@ -59,22 +58,28 @@ class Status(commands.Cog):
             "info: /info ℹ️"
         ])
 
-    @tasks.loop(seconds=20)  
+    # ✅ La loop doit être DANS la classe
+    @tasks.loop(seconds=20)
     async def change_status_loop(self):
-        if not self.is_temp_status and not self.temp_status_task:  
-            if not self.status_messages:
-                self.update_status_info()
+        if self.is_temp_status or self.temp_status_task:
+            return
+
+        if not self.status_messages:
+            self.update_status_info()
+
+        try:
             await self.bot.change_presence(
                 activity=discord.Activity(
                     type=discord.ActivityType.watching,
                     name=next(self.status_messages)
                 )
             )
+        except (discord.HTTPException, discord.ConnectionClosed, asyncio.TimeoutError):
+            await asyncio.sleep(5)
+        except Exception as e:
+            print(f"[Status Loop] Erreur inattendue: {e}")
 
-    @app_commands.command(
-        name="setstatus",
-        description="Changer le statut du bot temporairement avec type et durée"
-    )
+    @app_commands.command(name="setstatus", description="Changer le statut du bot temporairement")
     @app_commands.describe(
         status="Le message du statut",
         duration="Durée en secondes (0 ou négatif = permanent)",
@@ -82,22 +87,15 @@ class Status(commands.Cog):
         stream_channel="Nom de la chaîne si type Stream"
     )
     @app_commands.choices(activity_type=ACTIVITY_CHOICES)
-    async def set_status(
-        self,
-        interaction: discord.Interaction,
-        status: str,
-        duration: int,
-        activity_type: app_commands.Choice[str],
-        stream_channel: str = None
-    ):
+    async def set_status(self, interaction: discord.Interaction, status: str, duration: int,
+                         activity_type: app_commands.Choice[str], stream_channel: str = None):
         if interaction.user.id not in OWNER_IDS:
-            await interaction.response.send_message(
+            return await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
             )
-            return
 
         self.change_status_loop.stop()
-        
+
         type_mapping = {
             "play": discord.ActivityType.playing,
             "watch": discord.ActivityType.watching,
@@ -109,18 +107,15 @@ class Status(commands.Cog):
 
         if activity_type_enum == discord.ActivityType.streaming:
             if not stream_channel:
-                await interaction.response.send_message(
+                return await interaction.response.send_message(
                     "⚠️ Vous devez fournir le nom de la chaîne pour Stream.", ephemeral=True
                 )
-                return
-            stream_url = f"https://twitch.tv/{stream_channel}"
-            activity = discord.Streaming(name=status, url=stream_url)
+            activity = discord.Streaming(name=status, url=f"https://twitch.tv/{stream_channel}")
         else:
             activity = discord.Activity(type=activity_type_enum, name=status)
 
         self.is_temp_status = True
         await self.bot.change_presence(activity=activity)
-
         await interaction.response.send_message(
             f"✅ Statut changé pour `{status}` ({activity_type.name})"
             + (f" pendant {duration} secondes." if duration > 0 else " de façon permanente."),
@@ -144,39 +139,27 @@ class Status(commands.Cog):
         except asyncio.CancelledError:
             pass
 
-    @app_commands.command(
-        name="resetstatus",
-        description="Réinitialise le statut et reprend celui d'origine"
-    )
+    @app_commands.command(name="resetstatus", description="Réinitialise le statut du bot")
     async def reset_status(self, interaction: discord.Interaction):
         if interaction.user.id not in OWNER_IDS:
-            await interaction.response.send_message(
+            return await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
             )
-            return
 
         self.is_temp_status = False
         if self.temp_status_task:
             self.temp_status_task.cancel()
             self.temp_status_task = None
-        
+
         self.change_status_loop.restart()
+        await interaction.response.send_message("♻️ Le statut du bot a été réinitialisé.", ephemeral=True)
 
-        await interaction.response.send_message(
-            "♻️ Le statut du bot a été réinitialisé.", ephemeral=True
-        )
-
-    @app_commands.command(
-        name="updatestatus",
-        description="Met à jour les informations du statut"
-    )
+    @app_commands.command(name="updatestatus", description="Met à jour les informations du statut")
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
     async def update_status(self, interaction: discord.Interaction):
         self.update_status_info()
-        await interaction.response.send_message(
-            "✅ Les informations du statut ont été mises à jour!", 
-            ephemeral=True
-        )
+        await interaction.response.send_message("✅ Les informations du statut ont été mises à jour!", ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(Status(bot))

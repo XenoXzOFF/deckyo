@@ -35,7 +35,7 @@ class ServerInfo(commands.Cog):
         embed.add_field(name="Rôles", value=roles, inline=True)
         embed.add_field(name="Salons textuels", value=text_channels, inline=True)
         embed.add_field(name="Salons vocaux", value=voice_channels, inline=True)
-        embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):

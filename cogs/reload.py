@@ -36,7 +36,7 @@ class Reload(commands.Cog):
                     description=f"Le module `{module}` a été rechargé avec succès ✅",
                     color=discord.Color.green()
                 )
-                embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+                embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
                 await interaction.response.send_message(embed=embed)
             except Exception as e:
                 embed = discord.Embed(
@@ -44,7 +44,7 @@ class Reload(commands.Cog):
                     description=f"Impossible de recharger `{module}`.\n**Erreur :** {e}",
                     color=discord.Color.red()
                 )
-                embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+                embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
                 await interaction.response.send_message(embed=embed)
         else:
             count = 0
@@ -61,7 +61,7 @@ class Reload(commands.Cog):
                 description=f"Tous les modules ont été rechargés ({count} cogs).",
                 color=discord.Color.blurple()
             )
-            embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+            embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed)
 
     @reload.autocomplete("module")

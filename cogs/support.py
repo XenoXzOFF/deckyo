@@ -341,8 +341,8 @@ class CloseTicketView(View):
                     color=discord.Color.red(),
                     timestamp=datetime.datetime.utcnow()
                 )
-                close_embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
-                
+                close_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
+
                 try:
                     await user.send(embed=close_embed)
                 except discord.Forbidden:
@@ -394,7 +394,7 @@ class Support(commands.Cog):
                 color=discord.Color.red(),
                 timestamp=datetime.datetime.utcnow()
             )
-            embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+            embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
@@ -458,7 +458,7 @@ class Support(commands.Cog):
             color=discord.Color.blue(),
             timestamp=datetime.datetime.utcnow()
         )
-        embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         
         command_guild = interaction.guild
         if command_guild:
@@ -499,7 +499,7 @@ class Support(commands.Cog):
             color=discord.Color.blue(),
             timestamp=datetime.datetime.utcnow()
         )
-        embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         if command_guild.icon:
             embed.set_thumbnail(url=command_guild.icon.url)
 
@@ -519,7 +519,7 @@ class Support(commands.Cog):
             color=discord.Color.green(),
             timestamp=datetime.datetime.utcnow()
         )
-        log_embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+        log_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         await log_channel.send(embed=log_embed)
         try:
             dm_embed = discord.Embed(
@@ -534,7 +534,7 @@ class Support(commands.Cog):
                 color=discord.Color.blue(),
                 timestamp=datetime.datetime.utcnow()
             )
-            dm_embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
+            dm_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.user.send(embed=dm_embed)
         except discord.Forbidden:
             await ticket_channel.send(

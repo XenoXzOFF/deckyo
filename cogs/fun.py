@@ -32,6 +32,7 @@ class Fun(commands.Cog):
         )
         embed.add_field(name="Question", value=question, inline=False)
         embed.add_field(name="Réponse", value=random.choice(responses), inline=False)
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         
         await interaction.response.send_message(embed=embed)
 
@@ -48,8 +49,8 @@ class Fun(commands.Cog):
             description=f"La pièce tourne...",
             color=discord.Color.gold()
         )
-        message = await interaction.response.send_message(embed=embed)
-        
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
+        message = await interaction.response.send_message(embed=embed)        
         await asyncio.sleep(2)
         
         embed.description = f"**Résultat:** {result}"
@@ -71,7 +72,9 @@ class Fun(commands.Cog):
             description=f"Le dé à {faces} faces roule...",
             color=discord.Color.blue()
         )
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.response.send_message(embed=embed)
+        
         
         await asyncio.sleep(2)
         
@@ -97,6 +100,7 @@ class Fun(commands.Cog):
             description="Je réfléchis...",
             color=discord.Color.green()
         )
+        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.response.send_message(embed=embed)
         
         await asyncio.sleep(2)
