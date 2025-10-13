@@ -48,8 +48,6 @@ class BotInfo(commands.Cog):
         embed.add_field(name="📡 Latence", value=f"{latency} ms", inline=True)
         embed.add_field(name="⏱️ Uptime", value=uptime, inline=True)
         embed.add_field(name="🧠 OS", value=os_info, inline=False)
-        embed.add_field(name="💻 Python", value=python_version, inline=True)
-        embed.add_field(name="🧩 discord.py", value=discord_version, inline=True)
         embed.add_field(name="⚙️ CPU", value=f"{cpu_percent}%", inline=True)
         embed.add_field(name="💾 RAM", value=f"{memory.percent}%", inline=True)
         embed.add_field(name="🌐 Serveurs", value=f"{guild_count}", inline=True)
