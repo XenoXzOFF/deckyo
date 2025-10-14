@@ -21,7 +21,7 @@ class Ban(commands.Cog):
 
     @app_commands.command(
         name="ban",
-        description="🔨 Bannis un utilisateur du serveur (développeurs uniquement)"
+        description="🔨 Bannis un utilisateur du serveur (admins uniquement)"
     )
     @app_commands.describe(
         utilisateur="L'utilisateur à bannir",
