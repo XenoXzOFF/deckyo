@@ -16,7 +16,8 @@ PRESET_MESSAGES = {
             "Veuillez également noter que certaines fonctionnalités peuvent avoir été modifiées ou supprimées.\n"
             "Veuillez redmarrer votre client Discord pour que les changements prennent effet.\n\n"
             "⚠️ **Information importante** : Si vous aviez un ticket ouvert, "
-            "celui-ci a été fermé. Merci de réouvrir un nouveau ticket si besoin."
+            "celui-ci a été fermé. Merci de réouvrir un nouveau ticket si besoin.\n\n"
+            "Vous pouvez aller voir les nouveautés avec la commande `/changelog`."
         ),
         "color": discord.Color.blue()
     },
