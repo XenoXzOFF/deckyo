@@ -12,6 +12,9 @@ PRESET_MESSAGES = {
         "title": "📢 Mise à jour importante du bot",
         "description": (
             "Une mise à jour importante du bot vient d'être effectuée.\n\n"
+            "Veillez prendre connaissance des changements et nouveautés.\n"
+            "Veuillez également noter que certaines fonctionnalités peuvent avoir été modifiées ou supprimées.\n"
+            "Veuillez redmarrer votre client Discord pour que les changements prennent effet.\n\n"
             "⚠️ **Information importante** : Si vous aviez un ticket ouvert, "
             "celui-ci a été fermé. Merci de réouvrir un nouveau ticket si besoin."
         ),
@@ -30,6 +33,9 @@ PRESET_MESSAGES = {
         "description": (
             "De nouvelles fonctionnalités ont été ajoutées au bot !\n"
             "N'hésitez pas à ouvrir un ticket pour les découvrir et poser vos questions.\n"
+            "Veillez prendre connaissance des changements et nouveautés.\n"
+            "Veuillez également noter que certaines fonctionnalités peuvent avoir été modifiées ou supprimées.\n"
+            "Veuillez redmarrer votre client Discord pour que les changements prennent effet.\n\n"
             "Vous pouvez aller voir les nouveautés avec la commande `/changelog`."
         ),
         "color": discord.Color.green()
@@ -46,7 +52,7 @@ class MaJ(commands.Cog):
     )
     @app_commands.choices(
         type_message=[
-            app_commands.Choice(name="Mise à jour", value="maj"),
+            app_commands.Choice(name="Mise à jour importante", value="maj"),
             app_commands.Choice(name="Maintenance", value="maintenance"),
             app_commands.Choice(name="Nouveautés", value="nouveaute")
         ]
