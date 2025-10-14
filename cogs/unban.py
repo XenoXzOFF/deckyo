@@ -5,13 +5,6 @@ import os
 import datetime
 import asyncio
 
-# L'utilisateur doit avoir la permissions de debannir des membres
-# # Le bot doit logger l'action dans un salon spécifique
-# L'utilisateur peut debannir un utilisateur
-# Utiliser des embeds pour les messages envoyés par le bot, les logs
-# Mettre dans la raison du ban discord le nom de l'utilisateur qui a debanni, la raison et la durée si applicable
-# Utiliser l'id du membre banni et non son nom d'utilisateur pour le debannir
-
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
 log_channel_id = int(os.getenv('LOG_CHANNEL_ID'))
 
@@ -34,7 +27,7 @@ class Unban(commands.Cog):
         raison: str
     ):
         """Débannis un utilisateur du serveur avec une raison"""
-        # Vérifier si l'utilisateur est owner ou a la permission de bannir
+
         if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
@@ -64,11 +57,11 @@ class Unban(commands.Cog):
 
             await guild.unban(user_to_unban, reason=f"Débanni par {interaction.user} | Raison: {raison}")
 
-            # Envoyer un MP à l'utilisateur débanni
+
             try:
                 invite = await interaction.channel.create_invite(
-                    max_age=0,  # Jamais expire
-                    max_uses=1,  # 1 seule utilisation
+                    max_age=0,  
+                    max_uses=1,  
                     unique=True,
                     reason=f"Invitation pour {user_to_unban} après débannissement"
                 )
@@ -85,10 +78,8 @@ class Unban(commands.Cog):
                 
                 await user_to_unban.send(embed=dm_embed)
             except discord.Forbidden:
-                # L'utilisateur a bloqué les MPs ou n'accepte pas les MPs du bot
                 pass
             except Exception:
-                # Erreur lors de la création de l'invitation ou de l'envoi du MP
                 pass
 
             embed = discord.Embed(

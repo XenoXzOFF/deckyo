@@ -5,7 +5,6 @@ import datetime
 import asyncio
 import aiohttp
 
-# URL de l'API GitHub pour récupérer les commits
 GITHUB_API_URL = "https://api.github.com/repos/XenoXzOFF/deckyo/commits"
 
 class Changelog(commands.Cog):
@@ -14,7 +13,6 @@ class Changelog(commands.Cog):
         self.session = aiohttp.ClientSession()
 
     def cog_unload(self):
-        # Ferme proprement la session aiohttp quand le cog est déchargé
         asyncio.create_task(self.session.close())
 
     @app_commands.command(
@@ -33,7 +31,7 @@ class Changelog(commands.Cog):
                     )
                     return
 
-                commits = await response.json()  # JSON des commits
+                commits = await response.json()
 
         except Exception as e:
             await interaction.followup.send(

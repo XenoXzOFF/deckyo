@@ -5,12 +5,6 @@ import asyncio
 import os
 import datetime
 
-# Déplace les membres entre les salons vocaux
-# Utilisable uniquement par les personnes avec la permission "Déplacer les membres" ainsi que par les OWNER_IDS
-# J'aimerais déplacer un membre en particulier en choisissant le salon de destination
-# Les OWNER_IDS peuvent déplacer n'importe qui et nimporte où
-# Je ne veux plus le source channel, juste le membre et le destination channel
-
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
 MOVE_COOLDOWN = 10  # secondes
 

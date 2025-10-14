@@ -7,9 +7,6 @@ import datetime
 RULES_CHANNEL_ID = int(os.getenv('RULES_CHANNEL_ID'))
 RULES_ACCEPTED_ROLE_ID = int(os.getenv('RULES_ACCEPTED_ROLE_ID'))
 
-# Envoyer les règles dans le salon spécifié automatiquement au démarrage du bot et supprimer les anciens messages
-# Bouton pour accepter les règles
-
 class Rules(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -20,7 +17,6 @@ class Rules(commands.Cog):
             print(f"⚠️ Salon des règles introuvable : {RULES_CHANNEL_ID}")
             return
 
-        # Supprimer les anciens messages
         try:
             async for message in channel.history(limit=100):
                 await message.delete()
@@ -29,7 +25,6 @@ class Rules(commands.Cog):
         except Exception as e:
             print(f"⚠️ Erreur lors de la suppression des messages dans le salon {channel.name} : {e}")
 
-        # Créer le bouton
         class AcceptButton(discord.ui.View):
             @discord.ui.button(label="Accepter les règles", style=discord.ButtonStyle.green)
             async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):

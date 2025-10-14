@@ -58,7 +58,6 @@ class Status(commands.Cog):
             "info: /info ℹ️"
         ])
 
-    # ✅ La loop doit être DANS la classe
     @tasks.loop(seconds=20)
     async def change_status_loop(self):
         if self.is_temp_status or self.temp_status_task:

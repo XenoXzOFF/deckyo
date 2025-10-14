@@ -13,7 +13,6 @@ class AutoRole(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        # Vérifier si c'est le serveur de support
         if member.guild.id != SUPPORT_GUILD_ID:
             return
         

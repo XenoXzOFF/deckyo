@@ -5,13 +5,6 @@ import os
 import datetime
 import asyncio
 
-# L'utilisateur doit avoir la permissions de bannir des membres
-# L'utilisateur banni doit recevoir un message privé lui indiquant qu'il a été banni et la raison
-# Le bot doit logger l'action dans un salon spécifique
-# L'utilisateur peut bannir un utilisateur en spécifiant une durée (ex: 7d pour 7 jours, 12h pour 12 heures, 30m pour 30 minutes)
-# Utiliser des embeds pour les messages envoyés par le bot, les logs et les messages privés
-# Mettre dans la raison du ban discord le nom de l'utilisateur qui a banni, la raison et la durée si applicable
-
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
 log_channel_id = int(os.getenv('LOG_CHANNEL_ID'))
 
@@ -36,7 +29,6 @@ class Ban(commands.Cog):
         duree: str = None
     ):
         """Bannis un utilisateur du serveur avec une raison et une durée optionnelle"""
-        # Vérifier si l'utilisateur est owner ou a la permission de bannir
         if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True

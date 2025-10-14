@@ -386,7 +386,6 @@ class Support(commands.Cog):
     )
     async def ticket(self, interaction: discord.Interaction):
         """Ouvre un ticket de support"""
-        # Vérification des permissions d'administrateur
         if not interaction.user.guild_permissions.administrator:
             embed = discord.Embed(
                 title="❌ Erreur de permission",

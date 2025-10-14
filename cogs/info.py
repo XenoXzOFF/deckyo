@@ -12,7 +12,6 @@ class BotInfo(commands.Cog):
         self.start_time = time.time()
         self.command_usage = 0
 
-        # Écouteur pour compter les commandes exécutées
         @bot.listen("on_app_command_completion")
         async def on_app_command_completion(interaction, command):
             self.command_usage += 1
@@ -24,14 +23,12 @@ class BotInfo(commands.Cog):
 
     @app_commands.command(name="botinfo", description="Affiche les informations du bot")
     async def info_command(self, interaction: discord.Interaction):
-        # Informations système
         cpu_percent = psutil.cpu_percent(interval=0.5)
         memory = psutil.virtual_memory()
         os_info = f"{platform.system()} {platform.release()} ({platform.machine()})"
         python_version = platform.python_version()
         discord_version = discord.__version__
 
-        # Informations bot
         latency = round(self.bot.latency * 1000)  # ms
         uptime = self.format_uptime()
         guild_count = len(self.bot.guilds)

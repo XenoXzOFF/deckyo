@@ -59,7 +59,6 @@ class GlobalBan(commands.Cog):
 
         for guild in self.bot.guilds:
             try:
-                # Vérifier si déjà banni
                 try:
                     ban_entry = await guild.fetch_ban(user)
                     already_banned.append(guild.name)
@@ -67,12 +66,10 @@ class GlobalBan(commands.Cog):
                 except discord.NotFound:
                     pass
 
-                # Vérifier les permissions du bot
                 if not guild.me.guild_permissions.ban_members:
                     failed_guilds.append(f"{guild.name} (pas de permission)")
                     continue
 
-                # Bannir l'utilisateur
                 full_reason = f"[GLOBAL BAN] Par {interaction.user} | Raison: {raison}"
                 await guild.ban(discord.Object(id=user_id), reason=full_reason, delete_message_days=0)
                 banned_guilds.append(guild.name)
@@ -80,7 +77,6 @@ class GlobalBan(commands.Cog):
             except Exception as e:
                 failed_guilds.append(f"{guild.name} ({str(e)[:50]})")
 
-        # Envoyer un MP à l'utilisateur banni
         try:
             embed_dm = discord.Embed(
                 title="🌍 Ban Global",
@@ -95,7 +91,6 @@ class GlobalBan(commands.Cog):
         except Exception:
             pass
 
-        # Créer le message de réponse
         embed = discord.Embed(
             title="🌍 Ban Global Exécuté",
             color=discord.Color.green(),
@@ -111,7 +106,6 @@ class GlobalBan(commands.Cog):
         if failed_guilds:
             embed.add_field(name="❌ Échecs", value=f"{len(failed_guilds)} serveur(s)", inline=True)
 
-        # Détails des serveurs (limité pour éviter d'être trop long)
         if banned_guilds:
             servers_list = "\n".join(banned_guilds[:10])
             if len(banned_guilds) > 10:
@@ -121,7 +115,6 @@ class GlobalBan(commands.Cog):
         embed.set_footer(text=f"Exécuté par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.followup.send(embed=embed)
 
-        # Log l'action
         log_channel = self.bot.get_channel(log_channel_id)
         if log_channel:
             embed_log = discord.Embed(
@@ -186,26 +179,21 @@ class GlobalBan(commands.Cog):
 
         for guild in self.bot.guilds:
             try:
-                # Vérifier si l'utilisateur est banni
                 try:
                     await guild.fetch_ban(discord.Object(id=user_id))
                 except discord.NotFound:
                     not_banned.append(guild.name)
                     continue
 
-                # Vérifier les permissions du bot
                 if not guild.me.guild_permissions.ban_members:
                     failed_guilds.append(f"{guild.name} (pas de permission)")
                     continue
 
-                # Débannir l'utilisateur
                 full_reason = f"[GLOBAL UNBAN] Par {interaction.user} | Raison: {raison}"
                 await guild.unban(discord.Object(id=user_id), reason=full_reason)
                 unbanned_guilds.append(guild.name)
 
-                # Créer une invitation pour ce serveur
                 try:
-                    # Trouver un salon où créer l'invitation
                     invite_channel = None
                     for channel in guild.text_channels:
                         if channel.permissions_for(guild.me).create_instant_invite:
@@ -214,8 +202,8 @@ class GlobalBan(commands.Cog):
                     
                     if invite_channel:
                         invite = await invite_channel.create_invite(
-                            max_age=0,  # Jamais expire
-                            max_uses=1,  # 1 seule utilisation
+                            max_age=0,  
+                            max_uses=1,  
                             unique=True,
                             reason=f"Invitation pour {user} après déban global"
                         )
@@ -226,7 +214,6 @@ class GlobalBan(commands.Cog):
             except Exception as e:
                 failed_guilds.append(f"{guild.name} ({str(e)[:50]})")
 
-        # Envoyer un MP à l'utilisateur débanni avec les invitations
         try:
             embed_dm = discord.Embed(
                 title="🎉 Déban Global",
@@ -241,9 +228,7 @@ class GlobalBan(commands.Cog):
                 for guild_name, invite_url in invites.items():
                     invite_text += f"**{guild_name}**: [Rejoindre]({invite_url})\n"
                 
-                # Discord a une limite de 1024 caractères par field
                 if len(invite_text) > 1024:
-                    # Diviser en plusieurs fields
                     chunks = [invite_text[i:i+1024] for i in range(0, len(invite_text), 1024)]
                     for i, chunk in enumerate(chunks):
                         embed_dm.add_field(
@@ -259,7 +244,6 @@ class GlobalBan(commands.Cog):
         except Exception:
             pass
 
-        # Créer le message de réponse
         embed = discord.Embed(
             title="🌍 Déban Global Exécuté",
             color=discord.Color.green(),
@@ -277,7 +261,6 @@ class GlobalBan(commands.Cog):
 
         embed.add_field(name="🔗 Invitations créées", value=f"{len(invites)} invitation(s)", inline=True)
 
-        # Détails des serveurs (limité pour éviter d'être trop long)
         if unbanned_guilds:
             servers_list = "\n".join(unbanned_guilds[:10])
             if len(unbanned_guilds) > 10:
@@ -287,7 +270,6 @@ class GlobalBan(commands.Cog):
         embed.set_footer(text=f"Exécuté par {interaction.user}", icon_url=interaction.user.display_avatar)
         await interaction.followup.send(embed=embed)
 
-        # Log l'action
         log_channel = self.bot.get_channel(log_channel_id)
         if log_channel:
             embed_log = discord.Embed(
