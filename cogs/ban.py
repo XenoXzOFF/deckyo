@@ -121,7 +121,14 @@ class Ban(commands.Cog):
                 timestamp=datetime.datetime.utcnow()
             )
             if duration:
-                embed_dm.add_field(name="Durée", value=duree)
+                embed_dm.add_field(name="Utilisateur", value=f"{utilisateur} ({utilisateur.id})", inline=False)
+                embed_dm.add_field(name="Banni par", value=f"{interaction.user} ({interaction.user.id})", inline=False)
+                embed_dm.add_field(name="Raison", value=raison, inline=False)
+                embed_dm.set_footer(text=f"ID du ban: {utilisateur.id}-{int(datetime.datetime.utcnow().timestamp())}")
+
+                if duration:
+                    embed_log.add_field(name="Durée", value=duree, inline=False)
+                    embed_log.add_field(name="Fin du ban", value=ban_until.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
             embed_dm.set_footer(text="Si vous pensez que c'est une erreur, contactez un administrateur.")
             await utilisateur.send(embed=embed_dm)
         except Exception:
@@ -150,10 +157,11 @@ class Ban(commands.Cog):
                 embed_log.add_field(name="Utilisateur", value=f"{utilisateur} ({utilisateur.id})", inline=False)
                 embed_log.add_field(name="Banni par", value=f"{interaction.user} ({interaction.user.id})", inline=False)
                 embed_log.add_field(name="Raison", value=raison, inline=False)
+                embed_log.set_footer(text=f"ID du ban: {utilisateur.id}-{int(datetime.datetime.utcnow().timestamp())}")
+
                 if duration:
                     embed_log.add_field(name="Durée", value=duree, inline=False)
                     embed_log.add_field(name="Fin du ban", value=ban_until.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
-                embed_log.set_footer(text=f"ID du ban: {utilisateur.id}-{int(datetime.datetime.utcnow().timestamp())}")
                 await log_channel.send(embed=embed_log)
 
             if duration:
