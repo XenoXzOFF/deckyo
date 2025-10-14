@@ -67,7 +67,7 @@ class Ban(commands.Cog):
             pass  # L'utilisateur n'a peut-être pas pu recevoir le message privé
 
         try:
-            await interaction.guild.ban(utilisateur, reason=raison)
+            await interaction.guild.ban(utilisateur, reason=raison + f" | Banni par {interaction.user}", delete_message_days=0 + f" | Durée: {duree}" if duree else "Aucune durée spécifiée")
             embed = discord.Embed(
                 title="🔨 Utilisateur banni",
                 description=f"{utilisateur.mention} a été banni du serveur ✅",
