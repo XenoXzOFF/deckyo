@@ -37,6 +37,8 @@ class Clear(commands.Cog):
             )
             return
 
+        await interaction.response.defer(ephemeral=True)
+        
         try:
             now = discord.utils.utcnow()
             deleted = await interaction.channel.purge(
@@ -51,7 +53,7 @@ class Clear(commands.Cog):
                 timestamp=discord.utils.utcnow()
             )
             embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             
             await asyncio.sleep(5)
             try:
