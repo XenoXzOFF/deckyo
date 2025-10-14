@@ -36,9 +36,10 @@ class Ban(commands.Cog):
         duree: str = None
     ):
         """Bannis un utilisateur du serveur avec une raison et une durée optionnelle"""
-        if interaction.user.id not in OWNER_IDS:
+        # Vérifier si l'utilisateur est owner ou a la permission de bannir
+        if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message(
-                "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True
+                "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
             )
             return
 
@@ -63,13 +64,7 @@ class Ban(commands.Cog):
 
         if not guild.me.guild_permissions.ban_members:
             await interaction.response.send_message(
-                "🚫 Je n’ai pas la permission de bannir des membres.", ephemeral=True
-            )
-            return
-
-        if not interaction.user.guild_permissions.ban_members:
-            await interaction.response.send_message(
-                "🚫 Tu n’as pas la permission de bannir des membres.", ephemeral=True
+                "🚫 Je n'ai pas la permission de bannir des membres.", ephemeral=True
             )
             return
 
@@ -121,14 +116,8 @@ class Ban(commands.Cog):
                 timestamp=datetime.datetime.utcnow()
             )
             if duration:
-                embed_dm.add_field(name="Utilisateur", value=f"{utilisateur} ({utilisateur.id})", inline=False)
-                embed_dm.add_field(name="Banni par", value=f"{interaction.user} ({interaction.user.id})", inline=False)
-                embed_dm.add_field(name="Raison", value=raison, inline=False)
-                embed_dm.set_footer(text=f"ID du ban: {utilisateur.id}-{int(datetime.datetime.utcnow().timestamp())}")
-
-                if duration:
-                    embed_log.add_field(name="Durée", value=duree, inline=False)
-                    embed_log.add_field(name="Fin du ban", value=ban_until.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
+                embed_dm.add_field(name="Durée", value=duree, inline=False)
+                embed_dm.add_field(name="Fin du ban", value=ban_until.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
             embed_dm.set_footer(text="Si vous pensez que c'est une erreur, contactez un administrateur.")
             await utilisateur.send(embed=embed_dm)
         except Exception:
@@ -182,8 +171,7 @@ class Ban(commands.Cog):
                             title="❌ Erreur lors du déban",
                             description=f"Impossible de débannir {utilisateur} automatiquement.\n**Erreur :** {e}",
                             color=discord.Color.red(),
-                            timestamp=datetime
-.datetime.utcnow()
+                            timestamp=datetime.datetime.utcnow()
                         )
                         await log_channel.send(embed=embed_error)
         except Exception as e:

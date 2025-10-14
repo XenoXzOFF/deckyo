@@ -34,9 +34,10 @@ class Unban(commands.Cog):
         raison: str
     ):
         """Débannis un utilisateur du serveur avec une raison"""
-        if interaction.user.id not in OWNER_IDS:
+        # Vérifier si l'utilisateur est owner ou a la permission de bannir
+        if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message(
-                "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True
+                "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
             )
             return
 
@@ -49,9 +50,8 @@ class Unban(commands.Cog):
 
         try:
             user_id = int(utilisateur)
-            banned_users = await guild.bans()
             user_to_unban = None
-            for ban_entry in banned_users:
+            async for ban_entry in guild.bans():
                 if ban_entry.user.id == user_id:
                     user_to_unban = ban_entry.user
                     break
@@ -63,6 +63,33 @@ class Unban(commands.Cog):
                 return
 
             await guild.unban(user_to_unban, reason=f"Débanni par {interaction.user} | Raison: {raison}")
+
+            # Envoyer un MP à l'utilisateur débanni
+            try:
+                invite = await interaction.channel.create_invite(
+                    max_age=0,  # Jamais expire
+                    max_uses=1,  # 1 seule utilisation
+                    unique=True,
+                    reason=f"Invitation pour {user_to_unban} après débannissement"
+                )
+                
+                dm_embed = discord.Embed(
+                    title="🎉 Tu as été débanni !",
+                    description=f"Tu as été débanni du serveur **{guild.name}**.",
+                    color=discord.Color.green(),
+                    timestamp=datetime.datetime.utcnow()
+                )
+                dm_embed.add_field(name="Raison", value=raison, inline=False)
+                dm_embed.add_field(name="Lien d'invitation", value=f"[Clique ici pour rejoindre]({invite.url})", inline=False)
+                dm_embed.set_footer(text=f"Serveur: {guild.name}")
+                
+                await user_to_unban.send(embed=dm_embed)
+            except discord.Forbidden:
+                # L'utilisateur a bloqué les MPs ou n'accepte pas les MPs du bot
+                pass
+            except Exception:
+                # Erreur lors de la création de l'invitation ou de l'envoi du MP
+                pass
 
             embed = discord.Embed(
                 title="🔨 Utilisateur débanni",
@@ -99,5 +126,6 @@ class Unban(commands.Cog):
             )
             embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed)
+
 async def setup(bot):
     await bot.add_cog(Unban(bot))
