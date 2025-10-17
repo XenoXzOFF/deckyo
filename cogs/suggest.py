@@ -272,7 +272,7 @@ class Suggestion(commands.Cog):
             )
             dm_embed.add_field(
                 name="📋 État actuel",
-                value=STATUS_OPTIONS["pending"][0],
+                value=STATUS_OPTIONS["waiting"][0],
                 inline=False
             )
             dm_embed.set_footer(
