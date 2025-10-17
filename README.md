@@ -1,3 +1,4 @@
+[![Bots Discord](https://top.gg/api/widget/1192768970466533426.svg)](https://top.gg//bot/1192768970466533426)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)](LICENSE)
 
 FR :
