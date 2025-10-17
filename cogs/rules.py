@@ -53,7 +53,8 @@ class Rules(commands.Cog):
 
         embed = discord.Embed(title="Règles du Serveur", description=rules_text, color=discord.Color.blue(), timestamp=datetime.datetime.utcnow())
         embed.set_footer(text=f"{self.bot.user.name} fait par XenoXzOFF")
-        await channel.send(embed=embed, view=AcceptButton())
+        message = await channel.send(embed=embed, view=AcceptButton())
+        await message.add_reaction("✅")
         print(f"✅ Message des règles envoyé dans le salon {channel.name}.")
 
 async def setup(bot):
