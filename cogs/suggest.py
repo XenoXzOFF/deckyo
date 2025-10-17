@@ -8,6 +8,7 @@ import asyncio
 SUGGESTIONS_CHANNEL_ID = int(os.getenv('SUGGESTIONS_CHANNEL_ID'))
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
 STATUS_OPTIONS = {
+    "waiting": ("⏳ En attente", discord.Color.greyple()),
     "pending": ("🔄 En cours d'examen", discord.Color.orange()),
     "approved": ("✅ Approuvée", discord.Color.green()),
     "rejected": ("❌ Rejetée", discord.Color.red()),
@@ -87,7 +88,7 @@ class Suggestion(commands.Cog):
         )
         embed.add_field(
             name="📋 État", 
-            value=STATUS_OPTIONS["pending"][0], 
+            value=STATUS_OPTIONS["waiting"][0], 
             inline=False
         )
         
