@@ -5,6 +5,7 @@ import os
 import datetime
 
 WELCOME_CHANNEL_ID = int(os.getenv('WELCOME_CHANNEL_ID'))
+SUPPORT_GUILD_ID = int(os.getenv('SUPPORT_GUILD_ID'))
 
 class WelcomeCog(commands.Cog):
     def __init__(self, bot):
@@ -12,7 +13,9 @@ class WelcomeCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        """Envoie un message de bienvenue lorsqu'un nouveau membre rejoint le serveur."""
+        if member.guild.id != SUPPORT_GUILD_ID:
+            return
+        
         channel = self.bot.get_channel(WELCOME_CHANNEL_ID)
         if channel:
             embed = discord.Embed(
@@ -28,7 +31,6 @@ class WelcomeCog(commands.Cog):
     @app_commands.command(name="welcome", description="Envoie un message de bienvenue personnalisé.")
     @app_commands.describe(member="Le membre à qui envoyer le message de bienvenue.")
     async def welcome(self, interaction: discord.Interaction, member: discord.Member):
-        """Commande slash pour envoyer un message de bienvenue personnalisé."""
         channel = self.bot.get_channel(WELCOME_CHANNEL_ID)
         if channel:
             embed = discord.Embed(
