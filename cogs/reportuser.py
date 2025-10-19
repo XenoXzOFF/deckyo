@@ -5,8 +5,17 @@ import os
 import datetime
 import asyncio
 
-USER_REPORST_CHANNEL_ID = int(os.getenv('USER_REPORST_CHANNEL_ID'))
-OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
+try:
+    USER_REPORTS_CHANNEL_ID = int(os.getenv('USER_REPORTS_CHANNEL_ID'))
+except (TypeError, ValueError):
+    print("⚠️ ATTENTION: USER_REPORTS_CHANNEL_ID n'est pas défini dans le .env")
+    USER_REPORTS_CHANNEL_ID = None
+
+try:
+    OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
+except (TypeError, ValueError, AttributeError):
+    print("⚠️ ATTENTION: OWNER_IDS n'est pas défini dans le .env")
+    OWNER_IDS = []
 STATUS_OPTIONS = {
     "waiting": ("⏳ En attente", discord.Color.greyple()),
     "pending": ("🔄 En cours de traitement", discord.Color.orange()),
@@ -72,7 +81,7 @@ class ReportUser(commands.Cog):
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
             return
 
-        reports_channel = self.bot.get_channel(USER_REPORST_CHANNEL_ID)
+        reports_channel = self.bot.get_channel(USER_REPORTS_CHANNEL_ID)
         if not reports_channel:
             error_embed = discord.Embed(
                 title="⚠️ Erreur de configuration",
@@ -150,15 +159,526 @@ class ReportUser(commands.Cog):
                 inline=False
             )
 
+        class UnbanModal(discord.ui.Modal, title="Raison du débannissement"):
+            def __init__(self, unban_type: str):
+                super().__init__()
+                self.unban_type = unban_type
+                
+            raison = discord.ui.TextInput(
+                label="Raison du déban",
+                placeholder="Entrez la raison du débannissement...",
+                required=True,
+                style=discord.TextStyle.paragraph,
+                max_length=500
+            )
+            
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                await modal_interaction.response.defer(ephemeral=True)
+                
+                raison_text = self.raison.value
+                
+                if self.unban_type == "global":
+                    await self.execute_global_unban(modal_interaction, raison_text)
+                else:
+                    await self.execute_local_unban(modal_interaction, raison_text)
+            
+            async def execute_global_unban(self, modal_interaction: discord.Interaction, raison_text: str):
+                """Exécute un déban global"""
+                unbanned_guilds = []
+                failed_guilds = []
+                not_banned = []
+                invites = {}
+                
+                for guild in modal_interaction.client.guilds:
+                    try:
+                        try:
+                            await guild.fetch_ban(discord.Object(id=user.id))
+                        except discord.NotFound:
+                            not_banned.append(guild.name)
+                            continue
+                        
+                        if not guild.me.guild_permissions.ban_members:
+                            failed_guilds.append(f"{guild.name} (pas de permission)")
+                            continue
+                        
+                        full_reason = f"[GLOBAL UNBAN depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
+                        await guild.unban(discord.Object(id=user.id), reason=full_reason)
+                        unbanned_guilds.append(guild.name)
+                        
+                        # Création d'invitation
+                        try:
+                            invite_channel = None
+                            for channel in guild.text_channels:
+                                if channel.permissions_for(guild.me).create_instant_invite:
+                                    invite_channel = channel
+                                    break
+                            
+                            if invite_channel:
+                                invite = await invite_channel.create_invite(
+                                    max_age=0,
+                                    max_uses=1,
+                                    unique=True,
+                                    reason=f"Invitation pour {user} après déban global depuis rapport"
+                                )
+                                invites[guild.name] = invite.url
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        failed_guilds.append(f"{guild.name} ({str(e)[:50]})")
+                
+                # Notification à l'utilisateur débanni
+                try:
+                    embed_dm = discord.Embed(
+                        title="🎉 Déban Global",
+                        description=f"Tu as été débanni de **{len(unbanned_guilds)}** serveur(s) !",
+                        color=discord.Color.green(),
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    embed_dm.add_field(name="Raison", value=raison_text, inline=False)
+                    
+                    if invites:
+                        invite_text = ""
+                        for guild_name, invite_url in invites.items():
+                            invite_text += f"**{guild_name}**: [Rejoindre]({invite_url})\n"
+                        
+                        if len(invite_text) > 1024:
+                            chunks = [invite_text[i:i+1024] for i in range(0, len(invite_text), 1024)]
+                            for i, chunk in enumerate(chunks):
+                                embed_dm.add_field(
+                                    name=f"Liens d'invitation {f'({i+1})' if len(chunks) > 1 else ''}", 
+                                    value=chunk, 
+                                    inline=False
+                                )
+                        else:
+                            embed_dm.add_field(name="Liens d'invitation", value=invite_text, inline=False)
+                    
+                    embed_dm.set_footer(text="Les invitations sont à usage unique et n'expirent jamais.")
+                    await user.send(embed=embed_dm)
+                except Exception:
+                    pass
+                
+                # Mise à jour du rapport
+                embed.color = discord.Color.green()
+                embed.add_field(
+                    name="✅ Action prise",
+                    value=f"🌍 **Déban Global** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n✅ Débanni de {len(unbanned_guilds)} serveur(s)\n🔗 {len(invites)} invitation(s) créée(s)",
+                    inline=False
+                )
+                await message_report.edit(embed=embed)
+                
+                # Réponse à l'admin
+                response_embed = discord.Embed(
+                    title="🌍 Déban Global Exécuté",
+                    color=discord.Color.green(),
+                    timestamp=datetime.datetime.utcnow()
+                )
+                response_embed.add_field(name="Utilisateur", value=f"{user} ({user.id})", inline=False)
+                response_embed.add_field(name="Raison", value=raison_text, inline=False)
+                response_embed.add_field(name="✅ Serveurs débannis", value=f"{len(unbanned_guilds)}", inline=True)
+                if not_banned:
+                    response_embed.add_field(name="⚠️ Pas banni", value=f"{len(not_banned)}", inline=True)
+                if failed_guilds:
+                    response_embed.add_field(name="❌ Échecs", value=f"{len(failed_guilds)}", inline=True)
+                response_embed.add_field(name="🔗 Invitations", value=f"{len(invites)}", inline=True)
+                
+                await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
+            
+            async def execute_local_unban(self, modal_interaction: discord.Interaction, raison_text: str):
+                """Exécute un déban local sur le serveur d'origine"""
+                guild = interaction.guild
+                
+                # Vérifications
+                if not guild.me.guild_permissions.ban_members:
+                    await modal_interaction.followup.send(
+                        "🚫 Je n'ai pas la permission de débannir des membres sur ce serveur.",
+                        ephemeral=True
+                    )
+                    return
+                
+                try:
+                    # Vérifier si l'utilisateur est banni
+                    try:
+                        await guild.fetch_ban(discord.Object(id=user.id))
+                    except discord.NotFound:
+                        await modal_interaction.followup.send(
+                            f"🚫 L'utilisateur `{user}` n'est pas banni sur ce serveur.",
+                            ephemeral=True
+                        )
+                        return
+                    
+                    # Déban
+                    full_reason = f"[Déban depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
+                    await guild.unban(discord.Object(id=user.id), reason=full_reason)
+                    
+                    # Création d'invitation
+                    invite_url = None
+                    try:
+                        invite_channel = None
+                        for channel in guild.text_channels:
+                            if channel.permissions_for(guild.me).create_instant_invite:
+                                invite_channel = channel
+                                break
+                        
+                        if invite_channel:
+                            invite = await invite_channel.create_invite(
+                                max_age=0,
+                                max_uses=1,
+                                unique=True,
+                                reason=f"Invitation pour {user} après débannissement"
+                            )
+                            invite_url = invite.url
+                    except Exception:
+                        pass
+                    
+                    # Notification à l'utilisateur
+                    try:
+                        embed_dm = discord.Embed(
+                            title="🎉 Tu as été débanni !",
+                            description=f"Tu as été débanni du serveur **{guild.name}**.",
+                            color=discord.Color.green(),
+                            timestamp=datetime.datetime.utcnow()
+                        )
+                        embed_dm.add_field(name="Raison", value=raison_text, inline=False)
+                        if invite_url:
+                            embed_dm.add_field(name="Lien d'invitation", value=f"[Clique ici pour rejoindre]({invite_url})", inline=False)
+                        embed_dm.set_footer(text=f"Serveur: {guild.name}")
+                        await user.send(embed=embed_dm)
+                    except Exception:
+                        pass
+                    
+                    # Mise à jour du rapport
+                    embed.color = discord.Color.green()
+                    action_text = f"🔨 **Déban Local** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n**Serveur:** {guild.name}"
+                    if invite_url:
+                        action_text += "\n🔗 Invitation envoyée"
+                    embed.add_field(
+                        name="✅ Action prise",
+                        value=action_text,
+                        inline=False
+                    )
+                    await message_report.edit(embed=embed)
+                    
+                    # Réponse à l'admin
+                    response_embed = discord.Embed(
+                        title="🔨 Déban Local Exécuté",
+                        description=f"L'utilisateur `{user}` a été débanni de **{guild.name}** ✅",
+                        color=discord.Color.green(),
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    response_embed.add_field(name="Raison", value=raison_text, inline=False)
+                    if invite_url:
+                        response_embed.add_field(name="Invitation", value="✅ Créée et envoyée", inline=False)
+                    await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
+                    
+                except Exception as e:
+                    await modal_interaction.followup.send(
+                        f"❌ Erreur lors du déban: {str(e)}",
+                        ephemeral=True
+                    )
+
+        class BanModal(discord.ui.Modal, title="Raison du bannissement"):
+            def __init__(self, ban_type: str):
+                super().__init__()
+                self.ban_type = ban_type
+                
+            raison = discord.ui.TextInput(
+                label="Raison du ban",
+                placeholder="Entrez la raison du bannissement...",
+                required=True,
+                style=discord.TextStyle.paragraph,
+                max_length=500
+            )
+            
+            duree = discord.ui.TextInput(
+                label="Durée (optionnel, seulement pour ban local)",
+                placeholder="Ex: 7d, 12h, 30m (vide = permanent)",
+                required=False,
+                style=discord.TextStyle.short,
+                max_length=10
+            )
+            
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                await modal_interaction.response.defer(ephemeral=True)
+                
+                raison_text = self.raison.value
+                duree_text = self.duree.value.strip() if self.duree.value else None
+                
+                # Validation de la durée pour ban local
+                duration = None
+                ban_until = None
+                if duree_text and self.ban_type == "local":
+                    time_unit = duree_text[-1]
+                    if time_unit not in ['d', 'h', 'm']:
+                        await modal_interaction.followup.send(
+                            "🚫 La durée doit se terminer par 'd' (jours), 'h' (heures) ou 'm' (minutes).",
+                            ephemeral=True
+                        )
+                        return
+                    try:
+                        time_value = int(duree_text[:-1])
+                        if time_value <= 0:
+                            raise ValueError
+                    except ValueError:
+                        await modal_interaction.followup.send(
+                            "🚫 La durée doit être un nombre positif suivi de 'd', 'h' ou 'm'.",
+                            ephemeral=True
+                        )
+                        return
+                    
+                    if time_unit == 'd':
+                        duration = datetime.timedelta(days=time_value)
+                    elif time_unit == 'h':
+                        duration = datetime.timedelta(hours=time_value)
+                    elif time_unit == 'm':
+                        duration = datetime.timedelta(minutes=time_value)
+                    ban_until = datetime.datetime.utcnow() + duration
+                
+                if self.ban_type == "global":
+                    await self.execute_global_ban(modal_interaction, raison_text)
+                else:
+                    await self.execute_local_ban(modal_interaction, raison_text, duree_text, duration, ban_until)
+            
+            async def execute_global_ban(self, modal_interaction: discord.Interaction, raison_text: str):
+                """Exécute un ban global"""
+                banned_guilds = []
+                failed_guilds = []
+                already_banned = []
+                
+                for guild in modal_interaction.client.guilds:
+                    try:
+                        try:
+                            await guild.fetch_ban(user)
+                            already_banned.append(guild.name)
+                            continue
+                        except discord.NotFound:
+                            pass
+                        
+                        if not guild.me.guild_permissions.ban_members:
+                            failed_guilds.append(f"{guild.name} (pas de permission)")
+                            continue
+                        
+                        full_reason = f"[GLOBAL BAN depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
+                        await guild.ban(discord.Object(id=user.id), reason=full_reason, delete_message_days=0)
+                        banned_guilds.append(guild.name)
+                    except Exception as e:
+                        failed_guilds.append(f"{guild.name} ({str(e)[:50]})")
+                
+                # Notification à l'utilisateur banni
+                try:
+                    embed_dm = discord.Embed(
+                        title="🌍 Ban Global",
+                        description=f"Tu as été banni de **{len(banned_guilds)}** serveur(s) par les propriétaires du bot.",
+                        color=discord.Color.red(),
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    embed_dm.add_field(name="Raison", value=raison_text, inline=False)
+                    embed_dm.add_field(name="Type", value="Ban Global", inline=False)
+                    embed_dm.set_footer(text="Si tu penses que c'est une erreur, contacte les propriétaires du bot.")
+                    await user.send(embed=embed_dm)
+                except Exception:
+                    pass
+                
+                # Mise à jour du rapport
+                embed.color = discord.Color.dark_red()
+                embed.add_field(
+                    name="⚠️ Action prise",
+                    value=f"🌍 **Ban Global** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n✅ Banni de {len(banned_guilds)} serveur(s)",
+                    inline=False
+                )
+                await message_report.edit(embed=embed)
+                
+                # Réponse à l'admin
+                response_embed = discord.Embed(
+                    title="🌍 Ban Global Exécuté",
+                    color=discord.Color.green(),
+                    timestamp=datetime.datetime.utcnow()
+                )
+                response_embed.add_field(name="Utilisateur", value=f"{user} ({user.id})", inline=False)
+                response_embed.add_field(name="Raison", value=raison_text, inline=False)
+                response_embed.add_field(name="✅ Serveurs bannis", value=f"{len(banned_guilds)}", inline=True)
+                if already_banned:
+                    response_embed.add_field(name="⚠️ Déjà banni", value=f"{len(already_banned)}", inline=True)
+                if failed_guilds:
+                    response_embed.add_field(name="❌ Échecs", value=f"{len(failed_guilds)}", inline=True)
+                
+                await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
+            
+            async def execute_local_ban(self, modal_interaction: discord.Interaction, raison_text: str, duree_text: str, duration, ban_until):
+                """Exécute un ban local sur le serveur d'origine"""
+                guild = interaction.guild
+                
+                # Vérifications
+                if not guild.me.guild_permissions.ban_members:
+                    await modal_interaction.followup.send(
+                        "🚫 Je n'ai pas la permission de bannir des membres sur ce serveur.",
+                        ephemeral=True
+                    )
+                    return
+                
+                try:
+                    member = await guild.fetch_member(user.id)
+                except:
+                    member = None
+                
+                if member and member.top_role >= guild.me.top_role:
+                    await modal_interaction.followup.send(
+                        "🚫 Je ne peux pas bannir cet utilisateur car son rôle est supérieur ou égal au mien.",
+                        ephemeral=True
+                    )
+                    return
+                
+                # Exécution du ban
+                full_reason = f"[Ban depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
+                if duration:
+                    full_reason += f" | Durée: {duree_text}"
+                
+                try:
+                    # Notification à l'utilisateur
+                    try:
+                        embed_dm = discord.Embed(
+                            title="🔨 Vous avez été banni",
+                            description=f"Vous avez été banni du serveur **{guild.name}**.\n\n**Raison :** {raison_text}",
+                            color=discord.Color.red(),
+                            timestamp=datetime.datetime.utcnow()
+                        )
+                        if duration:
+                            embed_dm.add_field(name="Durée", value=duree_text, inline=False)
+                            embed_dm.add_field(name="Fin du ban", value=ban_until.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
+                        embed_dm.set_footer(text="Si vous pensez que c'est une erreur, contactez un administrateur.")
+                        await user.send(embed=embed_dm)
+                    except Exception:
+                        pass
+                    
+                    await guild.ban(discord.Object(id=user.id), reason=full_reason, delete_message_days=0)
+                    
+                    # Mise à jour du rapport
+                    embed.color = discord.Color.dark_red()
+                    action_text = f"🔨 **Ban Local** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n**Serveur:** {guild.name}"
+                    if duration:
+                        action_text += f"\n**Durée:** {duree_text}"
+                    embed.add_field(
+                        name="⚠️ Action prise",
+                        value=action_text,
+                        inline=False
+                    )
+                    await message_report.edit(embed=embed)
+                    
+                    # Réponse à l'admin
+                    response_embed = discord.Embed(
+                        title="🔨 Ban Local Exécuté",
+                        description=f"{user.mention} a été banni de **{guild.name}** ✅",
+                        color=discord.Color.green(),
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    response_embed.add_field(name="Raison", value=raison_text, inline=False)
+                    if duration:
+                        response_embed.add_field(name="Durée", value=duree_text, inline=False)
+                    await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
+                    
+                    # Déban automatique si durée définie
+                    if duration:
+                        await asyncio.sleep(duration.total_seconds())
+                        try:
+                            await guild.unban(discord.Object(id=user.id), reason="Durée de ban terminée")
+                        except Exception:
+                            pass
+                            
+                except Exception as e:
+                    await modal_interaction.followup.send(
+                        f"❌ Erreur lors du ban: {str(e)}",
+                        ephemeral=True
+                    )
+
         class StatusView(discord.ui.View):
             def __init__(self):
                 super().__init__(timeout=None)  
                 
             @discord.ui.button(
+                label="Ban Global",
+                style=discord.ButtonStyle.danger,
+                custom_id="ban_global_user",
+                emoji="🌍",
+                row=0
+            )
+            async def ban_global(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+                if interaction_btn.user.id not in OWNER_IDS:
+                    error_embed = discord.Embed(
+                        title="🚫 Permission refusée",
+                        description="Seuls les propriétaires du bot peuvent utiliser cette action.",
+                        color=discord.Color.red()
+                    )
+                    await interaction_btn.response.send_message(embed=error_embed, ephemeral=True)
+                    return
+                
+                modal = BanModal("global")
+                await interaction_btn.response.send_modal(modal)
+            
+            @discord.ui.button(
+                label="Ban Local",
+                style=discord.ButtonStyle.danger,
+                custom_id="ban_local_user",
+                emoji="🔨",
+                row=0
+            )
+            async def ban_local(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+                if interaction_btn.user.id not in OWNER_IDS:
+                    error_embed = discord.Embed(
+                        title="🚫 Permission refusée",
+                        description="Seuls les propriétaires du bot peuvent utiliser cette action.",
+                        color=discord.Color.red()
+                    )
+                    await interaction_btn.response.send_message(embed=error_embed, ephemeral=True)
+                    return
+                
+                modal = BanModal("local")
+                await interaction_btn.response.send_modal(modal)
+            
+            @discord.ui.button(
+                label="Unban Global",
+                style=discord.ButtonStyle.success,
+                custom_id="unban_global_user",
+                emoji="🌍",
+                row=0
+            )
+            async def unban_global(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+                if interaction_btn.user.id not in OWNER_IDS:
+                    error_embed = discord.Embed(
+                        title="🚫 Permission refusée",
+                        description="Seuls les propriétaires du bot peuvent utiliser cette action.",
+                        color=discord.Color.red()
+                    )
+                    await interaction_btn.response.send_message(embed=error_embed, ephemeral=True)
+                    return
+                
+                modal = UnbanModal("global")
+                await interaction_btn.response.send_modal(modal)
+            
+            @discord.ui.button(
+                label="Unban Local",
+                style=discord.ButtonStyle.success,
+                custom_id="unban_local_user",
+                emoji="🔓",
+                row=0
+            )
+            async def unban_local(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+                if interaction_btn.user.id not in OWNER_IDS:
+                    error_embed = discord.Embed(
+                        title="🚫 Permission refusée",
+                        description="Seuls les propriétaires du bot peuvent utiliser cette action.",
+                        color=discord.Color.red()
+                    )
+                    await interaction_btn.response.send_message(embed=error_embed, ephemeral=True)
+                    return
+                
+                modal = UnbanModal("local")
+                await interaction_btn.response.send_modal(modal)
+                
+            @discord.ui.button(
                 label="En cours de traitement",
                 style=discord.ButtonStyle.secondary,
                 custom_id="status_pending_user",
-                emoji="🔄"
+                emoji="🔄",
+                row=1
             )
             async def pending(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
                 await self.update_status(interaction_btn, "pending")
@@ -167,7 +687,8 @@ class ReportUser(commands.Cog):
                 label="Traité",
                 style=discord.ButtonStyle.success,
                 custom_id="status_resolved_user",
-                emoji="✅"
+                emoji="✅",
+                row=1
             )
             async def resolved(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
                 await self.update_status(interaction_btn, "resolved")
@@ -176,7 +697,8 @@ class ReportUser(commands.Cog):
                 label="Non pris en compte",
                 style=discord.ButtonStyle.danger,
                 custom_id="status_dismissed_user",
-                emoji="❌"
+                emoji="❌",
+                row=1
             )
             async def dismissed(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
                 await self.update_status(interaction_btn, "dismissed")
