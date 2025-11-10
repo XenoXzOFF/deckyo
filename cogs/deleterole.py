@@ -25,7 +25,6 @@ class DeleteRole(commands.Cog):
         interaction: discord.Interaction,
         role: discord.Role
     ):
-        """Supprime un rôle spécifique du serveur"""
         if interaction.user.id not in OWNER_IDS:
             await interaction.response.send_message(
                 "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True

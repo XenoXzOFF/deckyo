@@ -12,12 +12,11 @@ class RemoveRole(commands.Cog):
 
     @app_commands.command(
         name="removerole",
-        description="❌ Retire un rôle à un utilisateur (développeurs uniquement)"
+        description="❌ Retire un rôle à un utilisateur (permission Gérer les rôles requise)"
     )
     @app_commands.describe(
         utilisateur="L'utilisateur à qui retirer le rôle",
-        role="Le rôle à retirer"
-        ,
+        role="Le rôle à retirer",
         envoyer_mp="Envoyer un message privé à l'utilisateur ?"
     )
     async def removerole(
@@ -27,7 +26,7 @@ class RemoveRole(commands.Cog):
         role: discord.Role,
         envoyer_mp: bool
     ):
-        if interaction.user.id not in OWNER_IDS:
+        if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.manage_roles:
             await interaction.response.send_message(
                 "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True
             )

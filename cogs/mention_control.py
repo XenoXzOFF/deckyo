@@ -239,6 +239,22 @@ class MentionControl(commands.Cog):
             except discord.NotFound:
                 pass
 
+        # Envoi d'un message dans le salon de l'infraction
+        try:
+            action_msg_text = ""
+            if config["action"] == "timeout":
+                action_msg_text = f" et a été exclu(e) temporairement pour **{config['timeout_duration_minutes']} minute(s)**."
+            elif config["action"] in ["kick", "ban"]:
+                 action_msg_text = f" et a été **{config['action']}** du serveur."
+
+            channel_message = await message.channel.send(
+                f"🚫 {author.mention}, vous avez mentionné un rôle protégé. Votre message a été supprimé{action_msg_text}"
+            )
+            # Supprime le message après 10 secondes
+            await channel_message.delete(delay=10)
+        except discord.Forbidden:
+            pass # Le bot n'a pas la permission d'envoyer des messages ici
+
         dm_sent = False
         if config["warn_in_dm"]:
             try:
@@ -252,6 +268,9 @@ class MentionControl(commands.Cog):
                 if config["action"] != "none":
                     action_text = f"L'action suivante a été appliquée : **{config['action'].capitalize()}**."
                 embed_dm.add_field(name="Conséquence", value=action_text)
+                if config["action"] == "timeout":
+                    embed_dm.add_field(name="Durée", value=f"{config['timeout_duration_minutes']} minute(s)", inline=True)
+
                 embed_dm.set_footer(text="Veuillez respecter les règles du serveur.")
                 await author.send(embed=embed_dm)
                 dm_sent = True
@@ -267,11 +286,6 @@ class MentionControl(commands.Cog):
                 await author.timeout(duration, reason=reason)
                 action_taken = "Timeout"
                 action_details = f"Durée: {config['timeout_duration_minutes']} minutes"
-                if dm_sent:
-                    try:
-                        await author.send(f"Vous avez été exclu temporairement pour **{config['timeout_duration_minutes']} minutes**.")
-                    except discord.Forbidden:
-                        pass
             except discord.Forbidden:
                 action_taken = "Timeout (Échec)"
                 action_details = "Permissions manquantes pour timeout."
