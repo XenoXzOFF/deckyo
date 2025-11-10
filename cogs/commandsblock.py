@@ -14,10 +14,10 @@ class CommandsBlock(commands.Cog):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Check global pour toutes les commandes slash"""
-        if not interaction.guild or interaction.guild.id != SUPPORT_GUILD_ID:
-            return True
-        
         if interaction.user.id in OWNER_IDS:
+            return True
+
+        if not interaction.guild or interaction.guild.id != SUPPORT_GUILD_ID:
             return True
         
         if interaction.channel_id != COMMANDS_CHANNEL_ID:
