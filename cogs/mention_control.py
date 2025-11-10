@@ -214,7 +214,11 @@ class MentionControl(commands.Cog):
         if settings["allowed_channels"] and message.channel.id in settings["allowed_channels"]:
             return
 
-        mentioned_protected_roles = [role for role in message.role_mentions if role.id in settings["allowed_roles"]]
+        # Un rôle est protégé s'il est mentionnable ET qu'il n'est PAS dans la liste des rôles autorisés à être mentionnés.
+        # Cela protège tous les rôles par défaut, sauf ceux explicitement autorisés.
+        mentioned_protected_roles = [
+            role for role in message.role_mentions if role.mentionable and role.id not in settings["allowed_roles"]
+        ]
         if not mentioned_protected_roles:
             return
 
