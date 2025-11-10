@@ -284,7 +284,6 @@ class ReportUser(commands.Cog):
                 await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
             
             async def execute_local_unban(self, modal_interaction: discord.Interaction, raison_text: str):
-                """Exécute un déban local sur le serveur d'origine"""
                 guild = interaction.guild
                 
                 # Vérifications
@@ -296,7 +295,6 @@ class ReportUser(commands.Cog):
                     return
                 
                 try:
-                    # Vérifier si l'utilisateur est banni
                     try:
                         await guild.fetch_ban(discord.Object(id=user.id))
                     except discord.NotFound:
@@ -306,11 +304,9 @@ class ReportUser(commands.Cog):
                         )
                         return
                     
-                    # Déban
                     full_reason = f"[Déban depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
                     await guild.unban(discord.Object(id=user.id), reason=full_reason)
                     
-                    # Création d'invitation
                     invite_url = None
                     try:
                         invite_channel = None
@@ -330,7 +326,6 @@ class ReportUser(commands.Cog):
                     except Exception:
                         pass
                     
-                    # Notification à l'utilisateur
                     try:
                         embed_dm = discord.Embed(
                             title="🎉 Tu as été débanni !",
@@ -346,7 +341,6 @@ class ReportUser(commands.Cog):
                     except Exception:
                         pass
                     
-                    # Mise à jour du rapport
                     embed.color = discord.Color.green()
                     action_text = f"🔨 **Déban Local** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n**Serveur:** {guild.name}"
                     if invite_url:
@@ -358,7 +352,6 @@ class ReportUser(commands.Cog):
                     )
                     await message_report.edit(embed=embed)
                     
-                    # Réponse à l'admin
                     response_embed = discord.Embed(
                         title="🔨 Déban Local Exécuté",
                         description=f"L'utilisateur `{user}` a été débanni de **{guild.name}** ✅",
@@ -403,7 +396,6 @@ class ReportUser(commands.Cog):
                 raison_text = self.raison.value
                 duree_text = self.duree.value.strip() if self.duree.value else None
                 
-                # Validation de la durée pour ban local
                 duration = None
                 ban_until = None
                 if duree_text and self.ban_type == "local":
@@ -439,7 +431,6 @@ class ReportUser(commands.Cog):
                     await self.execute_local_ban(modal_interaction, raison_text, duree_text, duration, ban_until)
             
             async def execute_global_ban(self, modal_interaction: discord.Interaction, raison_text: str):
-                """Exécute un ban global"""
                 banned_guilds = []
                 failed_guilds = []
                 already_banned = []
@@ -463,7 +454,6 @@ class ReportUser(commands.Cog):
                     except Exception as e:
                         failed_guilds.append(f"{guild.name} ({str(e)[:50]})")
                 
-                # Notification à l'utilisateur banni
                 try:
                     embed_dm = discord.Embed(
                         title="🌍 Ban Global",
@@ -478,7 +468,6 @@ class ReportUser(commands.Cog):
                 except Exception:
                     pass
                 
-                # Mise à jour du rapport
                 embed.color = discord.Color.dark_red()
                 embed.add_field(
                     name="⚠️ Action prise",
@@ -487,7 +476,6 @@ class ReportUser(commands.Cog):
                 )
                 await message_report.edit(embed=embed)
                 
-                # Réponse à l'admin
                 response_embed = discord.Embed(
                     title="🌍 Ban Global Exécuté",
                     color=discord.Color.green(),
@@ -504,10 +492,8 @@ class ReportUser(commands.Cog):
                 await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
             
             async def execute_local_ban(self, modal_interaction: discord.Interaction, raison_text: str, duree_text: str, duration, ban_until):
-                """Exécute un ban local sur le serveur d'origine"""
                 guild = interaction.guild
                 
-                # Vérifications
                 if not guild.me.guild_permissions.ban_members:
                     await modal_interaction.followup.send(
                         "🚫 Je n'ai pas la permission de bannir des membres sur ce serveur.",
@@ -527,13 +513,11 @@ class ReportUser(commands.Cog):
                     )
                     return
                 
-                # Exécution du ban
                 full_reason = f"[Ban depuis rapport] Par {modal_interaction.user} | Raison: {raison_text}"
                 if duration:
                     full_reason += f" | Durée: {duree_text}"
                 
                 try:
-                    # Notification à l'utilisateur
                     try:
                         embed_dm = discord.Embed(
                             title="🔨 Vous avez été banni",
@@ -551,7 +535,6 @@ class ReportUser(commands.Cog):
                     
                     await guild.ban(discord.Object(id=user.id), reason=full_reason, delete_message_days=0)
                     
-                    # Mise à jour du rapport
                     embed.color = discord.Color.dark_red()
                     action_text = f"🔨 **Ban Local** par {modal_interaction.user.mention}\n**Raison:** {raison_text}\n**Serveur:** {guild.name}"
                     if duration:
@@ -563,7 +546,6 @@ class ReportUser(commands.Cog):
                     )
                     await message_report.edit(embed=embed)
                     
-                    # Réponse à l'admin
                     response_embed = discord.Embed(
                         title="🔨 Ban Local Exécuté",
                         description=f"{user.mention} a été banni de **{guild.name}** ✅",
@@ -575,7 +557,6 @@ class ReportUser(commands.Cog):
                         response_embed.add_field(name="Durée", value=duree_text, inline=False)
                     await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
                     
-                    # Déban automatique si durée définie
                     if duration:
                         await asyncio.sleep(duration.total_seconds())
                         try:

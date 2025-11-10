@@ -28,7 +28,6 @@ class Ban(commands.Cog):
         raison: str,
         duree: str = None
     ):
-        """Bannis un utilisateur du serveur avec une raison et une durée optionnelle"""
         if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True

@@ -23,7 +23,6 @@ class Status(commands.Cog):
         self.update_status_info()
 
     async def cog_load(self):
-        """Démarre la tâche quand le cog est chargé"""
         self.change_status_loop.start()
 
     def count_lines_of_code(self):

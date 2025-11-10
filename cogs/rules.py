@@ -40,7 +40,6 @@ class Rules(commands.Cog):
                 else:
                     await interaction.response.send_message("⚠️ Rôle d'acceptation des règles introuvable.", ephemeral=True)
 
-        # Message des règles
         rules_text = (
             "Bienvenue sur le serveur !\n\n"
             "1. Respectez les autres membres.\n"

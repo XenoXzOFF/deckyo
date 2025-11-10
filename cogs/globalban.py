@@ -25,7 +25,6 @@ class GlobalBan(commands.Cog):
         utilisateur_id: str,
         raison: str
     ):
-        """Bannis un utilisateur de tous les serveurs où le bot est présent"""
         if interaction.user.id not in OWNER_IDS:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
@@ -144,7 +143,6 @@ class GlobalBan(commands.Cog):
         utilisateur_id: str,
         raison: str
     ):
-        """Débannis un utilisateur de tous les serveurs où le bot est présent"""
         if interaction.user.id not in OWNER_IDS:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True

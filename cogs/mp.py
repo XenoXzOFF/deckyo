@@ -64,7 +64,6 @@ class MaJ(commands.Cog):
         interaction: discord.Interaction, 
         type_message: str
     ):
-        await interaction.response.defer(ephemeral=True)
         
         sent_count = 0
         failed_count = 0
@@ -79,7 +78,7 @@ class MaJ(commands.Cog):
         )
         embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
 
-        progress_msg = await interaction.followup.send(
+        progress_msg = await interaction.response.send_message(
             "⏳ Envoi des messages aux propriétaires en cours...\n⚠️ Délai de 25 secondes entre chaque envoi", 
             ephemeral=True
         )

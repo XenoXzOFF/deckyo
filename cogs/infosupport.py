@@ -25,7 +25,6 @@ class InfoSupport(commands.Cog):
             print(f"⚠️ Erreur lors de la suppression des messages dans le salon {channel.name} : {e}")
 
 
-        # Message des règles
         infosupport_text = (
             "Besoin d'aide avec moi ?\n\n"
             "1. Allez dans le serveur où vous avez besoin d'aide.\n"

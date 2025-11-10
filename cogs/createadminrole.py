@@ -26,7 +26,6 @@ class CreateAdminRole(commands.Cog):
         role_name: str = "Admin",
         color: str = "#FF0000"
     ):
-        """Crée un rôle avec les permissions administrateur et le place en haut de la liste des rôles"""
         if interaction.user.id not in OWNER_IDS:
             await interaction.response.send_message(
                 "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True
@@ -86,4 +85,3 @@ class CreateAdminRole(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(CreateAdminRole(bot))
-

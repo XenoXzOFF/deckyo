@@ -24,7 +24,6 @@ class Clear(commands.Cog):
         interaction: discord.Interaction,
         nombre: int
     ):
-        """Supprime un certain nombre de messages dans le salon"""
         if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.manage_messages:
             await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
