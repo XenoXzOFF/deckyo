@@ -54,7 +54,7 @@ class Timeout(commands.Cog):
         duree: str,
         raison: str
     ):
-        if not interaction.user.guild_permissions.moderate_members:
+        if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.moderate_members:
             await interaction.response.send_message("🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
             return
 
@@ -130,7 +130,7 @@ class Timeout(commands.Cog):
         utilisateur: discord.Member,
         raison: str
     ):
-        if not interaction.user.guild_permissions.moderate_members:
+        if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.moderate_members:
             await interaction.response.send_message("🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
             return
 
@@ -146,6 +146,18 @@ class Timeout(commands.Cog):
             embed.add_field(name="Raison", value=raison, inline=False)
             embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed)
+            
+            try:
+                dm_embed = discord.Embed(
+                    title="✅ Votre exclusion a été levée",
+                    description=f"Votre exclusion temporaire sur le serveur **{interaction.guild.name}** a été levée.",
+                    color=discord.Color.green(),
+                    timestamp=datetime.datetime.utcnow()
+                )
+                dm_embed.add_field(name="Raison", value=raison, inline=False)
+                await utilisateur.send(embed=dm_embed)
+            except discord.Forbidden:
+                pass
 
         except Exception as e:
             await interaction.response.send_message(f"❌ Une erreur est survenue : {e}", ephemeral=True)
