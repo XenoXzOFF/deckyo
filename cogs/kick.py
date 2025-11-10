@@ -71,15 +71,29 @@ class Kick(commands.Cog):
         full_reason = f"Expulsé par {interaction.user} | Raison: {raison}"
 
         try:
+            invite = await interaction.channel.create_invite(
+                max_age=0,      # L'invitation n'expire jamais
+                max_uses=1,     # L'invitation est à usage unique
+                unique=True,
+                reason=f"Invitation pour {utilisateur} après expulsion"
+            )
+            
             embed_dm = discord.Embed(
                 title="👢 Vous avez été expulsé",
                 description=f"Vous avez été expulsé du serveur **{guild.name}**.\n\n**Raison :** {raison}",
                 color=discord.Color.orange(),
                 timestamp=datetime.datetime.utcnow()
             )
-            embed_dm.set_footer(text="Vous pouvez rejoindre le serveur à nouveau si vous avez une invitation.")
+            embed_dm.add_field(
+                name="Lien d'invitation pour revenir",
+                value=f"[Cliquez ici pour rejoindre le serveur]({invite.url})",
+                inline=False
+            )
+            embed_dm.set_footer(text="Cette invitation est à usage unique.")
             await utilisateur.send(embed=embed_dm)
         except discord.Forbidden:
+            pass
+        except Exception:
             pass
 
         await guild.kick(utilisateur, reason=full_reason)
