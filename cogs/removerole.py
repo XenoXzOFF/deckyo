@@ -17,14 +17,16 @@ class RemoveRole(commands.Cog):
     @app_commands.describe(
         utilisateur="L'utilisateur à qui retirer le rôle",
         role="Le rôle à retirer"
+        ,
+        envoyer_mp="Envoyer un message privé à l'utilisateur ?"
     )
     async def removerole(
         self,
         interaction: discord.Interaction,
         utilisateur: discord.Member,
-        role: discord.Role
+        role: discord.Role,
+        envoyer_mp: bool
     ):
-        """Retire un rôle spécifique à un utilisateur"""
         if interaction.user.id not in OWNER_IDS:
             await interaction.response.send_message(
                 "🚫 Tu n’as pas la permission d’utiliser cette commande.", ephemeral=True
@@ -32,10 +34,28 @@ class RemoveRole(commands.Cog):
             return
 
         try:
+            mp_sent_status = ""
+            if envoyer_mp:
+                try:
+                    embed_dm = discord.Embed(
+                        title="❌ Rôle Retiré",
+                        description=f"Le rôle **{role.name}** vous a été retiré sur le serveur **{interaction.guild.name}**.",
+                        color=discord.Color.red(),
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    embed_dm.set_footer(text=f"Action effectuée par {interaction.user.display_name}")
+                    await utilisateur.send(embed=embed_dm)
+                    mp_sent_status = "\n✅ MP envoyé à l'utilisateur."
+                except discord.Forbidden:
+                    mp_sent_status = "\n⚠️ Impossible d'envoyer un MP à l'utilisateur (MPs fermés ou bot bloqué)."
+                except Exception as e:
+                    mp_sent_status = f"\n❌ Erreur lors de l'envoi du MP : {e}"
+
             await utilisateur.remove_roles(role)
+
             embed = discord.Embed(
                 title="❌ Rôle retiré",
-                description=f"Le rôle `{role.name}` a été retiré à {utilisateur.mention} ✅",
+                description=f"Le rôle `{role.name}` a été retiré à {utilisateur.mention} ✅{mp_sent_status}",
                 color=discord.Color.green(),
                 timestamp=datetime.datetime.utcnow()
             )
