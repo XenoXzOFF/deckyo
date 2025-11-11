@@ -18,14 +18,16 @@ class GiveRole(commands.Cog):
     @app_commands.describe(
         utilisateur="L'utilisateur à qui donner le rôle",
         role="Le rôle à donner",
-        envoyer_mp="Envoyer un message privé à l'utilisateur ?"
+        envoyer_mp="Envoyer un message privé à l'utilisateur ?",
+        duree="Durée pendant laquelle le rôle est attribué (ex: 10m, 2h, 7d). Laisser vide pour permanent."
     )
     async def giverole(
         self,
         interaction: discord.Interaction,
         utilisateur: discord.Member,
         role: discord.Role,
-        envoyer_mp: bool
+        envoyer_mp: bool,
+        duree: str = None
     ):
         if interaction.user.id not in OWNER_IDS and not interaction.user.guild_permissions.manage_roles:
             await interaction.response.send_message(
@@ -33,13 +35,41 @@ class GiveRole(commands.Cog):
             )
             return
 
+        duration = None
+        if duree:
+            time_unit = duree[-1].lower()
+            if time_unit not in ['d', 'h', 'm', 's']:
+                await interaction.response.send_message(
+                    "🚫 La durée doit se terminer par 'd' (jours), 'h' (heures), 'm' (minutes) ou 's' (secondes).", ephemeral=True
+                )
+                return
+            try:
+                time_value = int(duree[:-1])
+                if time_value <= 0:
+                    raise ValueError
+            except ValueError:
+                await interaction.response.send_message(
+                    "🚫 La durée doit être un nombre positif suivi de 'd', 'h', 'm' ou 's'.", ephemeral=True
+                )
+                return
+
+            if time_unit == 'd':
+                duration = datetime.timedelta(days=time_value)
+            elif time_unit == 'h':
+                duration = datetime.timedelta(hours=time_value)
+            elif time_unit == 'm':
+                duration = datetime.timedelta(minutes=time_value)
+            elif time_unit == 's':
+                duration = datetime.timedelta(seconds=time_value)
+
         try:
             mp_sent_status = ""
             if envoyer_mp:
                 try:
                     embed_dm = discord.Embed(
                         title="🎖️ Rôle Ajouté",
-                        description=f"Le rôle **{role.name}** vous a été ajouté sur le serveur **{interaction.guild.name}**.",
+                        description=f"Le rôle **{role.name}** vous a été ajouté sur le serveur **{interaction.guild.name}**"
+                                    + (f" pour une durée de **{duree}**." if duration else "."),
                         color=discord.Color.green(),
                         timestamp=datetime.datetime.utcnow()
                     )
@@ -53,18 +83,34 @@ class GiveRole(commands.Cog):
 
             await utilisateur.add_roles(role)
 
+            description_msg = f"Le rôle `{role.name}` a été donné à {utilisateur.mention} ✅"
+            if duration:
+                description_msg += f" pour une durée de **{duree}**."
+            description_msg += mp_sent_status
+
             embed = discord.Embed(
                 title="🎖️ Rôle attribué",
-                description=f"Le rôle `{role.name}` a été donné à {utilisateur.mention} ✅{mp_sent_status}",
+                description=description_msg,
                 color=discord.Color.green(),
                 timestamp=datetime.datetime.utcnow()
             )
             embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed)
-            await asyncio.sleep(5)
-            try:
-                await interaction.delete_original_response()
-            except Exception: pass
+
+            if duration:
+                await asyncio.sleep(duration.total_seconds())
+                try:
+                    if role in utilisateur.roles:
+                        await utilisateur.remove_roles(role, reason="Durée du rôle temporaire expirée.")
+                        # Optionnel: notifier l'utilisateur que le rôle a été retiré
+                        try:
+                            await utilisateur.send(f"Le rôle temporaire **{role.name}** sur le serveur **{interaction.guild.name}** a expiré et vous a été retiré.")
+                        except discord.Forbidden:
+                            pass
+                except discord.HTTPException:
+                    # Gérer les erreurs si l'utilisateur a quitté le serveur, etc.
+                    pass
+
         except Exception as e:
             embed = discord.Embed(
                 title="❌ Erreur d'attribution",
@@ -74,10 +120,6 @@ class GiveRole(commands.Cog):
             )
             embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
             await interaction.response.send_message(embed=embed)
-            await asyncio.sleep(5)
-            try:
-                await interaction.delete_original_response()
-            except Exception: pass
 
 async def setup(bot):
     await bot.add_cog(GiveRole(bot))
