@@ -17,16 +17,18 @@ class CommandsBlock(commands.Cog):
         if interaction.user.id in OWNER_IDS:
             return True
 
-        if not interaction.guild or interaction.guild.id != SUPPORT_GUILD_ID:
-            return True
-        
-        if interaction.channel_id != COMMANDS_CHANNEL_ID:
-            await interaction.response.send_message(
-                f"🚫 Les commandes ne peuvent être utilisées que dans le salon <#{COMMANDS_CHANNEL_ID}>.",
-                ephemeral=True
-            )
-            return False
-        
+        # Si la commande est utilisée sur le serveur de support
+        if interaction.guild and interaction.guild.id == SUPPORT_GUILD_ID:
+            # Et si le salon n'est pas le salon de commandes autorisé
+            if interaction.channel_id != COMMANDS_CHANNEL_ID:
+                # Alors on bloque la commande
+                await interaction.response.send_message(
+                    f"🚫 Sur ce serveur, les commandes ne peuvent être utilisées que dans le salon <#{COMMANDS_CHANNEL_ID}>.",
+                    ephemeral=True
+                )
+                return False
+
+        # Pour tous les autres cas (autres serveurs, MPs), on autorise la commande.
         return True
 
     def cog_unload(self):

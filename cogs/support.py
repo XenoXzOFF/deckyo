@@ -2,17 +2,19 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import datetime
-import io
-import html
 import os
 from discord.ui import Button, View
 import asyncio
+import requests
+import json
 
 OWNER_IDS = [int(id) for id in os.getenv('OWNER_IDS').split(',')]
 SUPPORT_GUILD_ID = int(os.getenv('SUPPORT_GUILD_ID'))
 TICKET_CATEGORY_ID = int(os.getenv('TICKET_CATEGORY_ID'))
 SUPPORT_LOG_CHANNEL_ID = int(os.getenv('SUPPORT_LOG_CHANNEL_ID'))
 STAFF_ROLE_ID = int(os.getenv('STAFF_ROLE_ID'))
+WEBAPP_URL = os.getenv('WEBAPP_URL')
+API_SECRET_KEY = os.getenv('API_SECRET_KEY')
 
 class CloseTicketView(View):
     def __init__(self, bot):
@@ -26,297 +28,62 @@ class CloseTicketView(View):
     @discord.ui.button(label="Transcript", style=discord.ButtonStyle.gray, emoji="📝")
     async def create_transcript(self, interaction, button):
         await self.generate_transcript(interaction)
-
+    
     async def generate_transcript(self, interaction):
         channel = interaction.channel
-        
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Transcript {channel.name}</title>
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-                
-                * {{
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }}
-                
-                body {{
-                    font-family: 'Inter', sans-serif;
-                    background: #313338;
-                    color: #dcddde;
-                    line-height: 1.5;
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 2rem;
-                }}
-                
-                .header {{
-                    background: #2b2d31;
-                    padding: 2rem;
-                    border-radius: 8px;
-                    margin-bottom: 2rem;
-                    text-align: center;
-                    border: 1px solid #1e1f22;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                }}
-                
-                .header h1 {{
-                    color: #ffffff;
-                    font-size: 2rem;
-                    margin-bottom: 1rem;
-                }}
-                
-                .message {{
-                    padding: 1rem;
-                    margin: 1rem 0;
-                    background: #2b2d31;
-                    border-radius: 8px;
-                    border: 1px solid #1e1f22;
-                    transition: background 0.2s;
-                }}
-                
-                .message:hover {{
-                    background: #2e3035;
-                }}
-                
-                .author {{
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    margin-bottom: 0.5rem;
-                }}
-                
-                .author-avatar {{
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    object-fit: cover;
-                }}
-                
-                .message-header {{
-                    display: flex;
-                    align-items: baseline;
-                    gap: 0.5rem;
-                }}
-                
-                .author-name {{
-                    color: #fff;
-                    font-weight: 500;
-                }}
-                
-                .timestamp {{
-                    color: #a3a6aa;
-                    font-size: 0.8rem;
-                }}
-                
-                .content {{
-                    color: #dcddde;
-                    margin: 0.5rem 0 0.5rem 3.25rem;
-                    word-wrap: break-word;
-                }}
-                
-                .embed {{
-                    margin: 0.5rem 0 0.5rem 3.25rem;
-                    padding: 0.75rem;
-                    background: rgba(0,0,0,0.3);
-                    border-radius: 4px;
-                    border-left: 4px solid;
-                }}
-                
-                .embed-title {{
-                    color: #ffffff;
-                    font-size: 1rem;
-                    font-weight: 600;
-                    margin-bottom: 0.5rem;
-                }}
-                
-                .embed-description {{
-                    color: #dcddde;
-                }}
-                
-                .embed-field {{
-                    margin: 0.5rem 0;
-                }}
-                
-                .embed-field-name {{
-                    color: #ffffff;
-                    font-weight: 600;
-                    margin-bottom: 0.25rem;
-                }}
-                
-                .attachments {{
-                    margin: 0.5rem 0 0.5rem 3.25rem;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 0.75rem;
-                }}
-                
-                .attachment {{
-                    background: rgba(0,0,0,0.2);
-                    padding: 0.5rem;
-                    border-radius: 4px;
-                }}
-                
-                .attachment img {{
-                    max-width: 100%;
-                    border-radius: 4px;
-                }}
-                
-                .reactions {{
-                    margin: 0.5rem 0 0 3.25rem;
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 0.5rem;
-                }}
-                
-                .reaction {{
-                    background: rgba(0,0,0,0.2);
-                    padding: 0.25rem 0.5rem;
-                    border-radius: 4px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.25rem;
-                    font-size: 0.9rem;
-                }}
-                
-                .emoji {{
-                    height: 1.25rem;
-                    vertical-align: middle;
-                    margin: 0 0.1rem;
-                }}
-                
-                a {{
-                    color: #00a8fc;
-                    text-decoration: none;
-                }}
-                
-                a:hover {{
-                    text-decoration: underline;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>🎫 Transcript: {channel.name}</h1>
-                <p>Généré le {datetime.datetime.utcnow().strftime('%d/%m/%Y à %H:%M:%S')}</p>
-            </div>
-        """
-
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        messages_data = []
         async for message in channel.history(limit=None, oldest_first=True):
-            timestamp = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            
-            content = message.content
-            if content:
-                for emoji in message.guild.emojis:
-                    emoji_tag = f"<:{emoji.name}:{emoji.id}>"
-                    if emoji_tag in content:
-                        content = content.replace(emoji_tag, f'<img class="emoji" src="{emoji.url}" alt="{emoji.name}">')
-                    emoji_tag = f"<a:{emoji.name}:{emoji.id}>"
-                    if emoji_tag in content:
-                        content = content.replace(emoji_tag, f'<img class="emoji" src="{emoji.url}" alt="{emoji.name}">')
-                
-                content = html.escape(content).replace('\n', '<br>')
-            else:
-                content = ""
+            messages_data.append({
+                "author_name": str(message.author),
+                "author_avatar": str(message.author.display_avatar.url),
+                "content": message.content,
+                "timestamp": message.created_at.isoformat(),
+                "embeds": [embed.to_dict() for embed in message.embeds],
+                "attachments": [att.url for att in message.attachments]
+            })
 
-            embeds_html = ""
-            for embed in message.embeds:
-                embed_color = f"#{hex(embed.color.value)[2:].zfill(6)}" if embed.color else "#2f3136"
-                embeds_html += f"""
-                <div class="embed" style="border-color: {embed_color}">
-                """
-                if embed.author:
-                    author_icon = f'<img src="{embed.author.icon_url}" class="author-avatar" alt="Author Icon">' if embed.author.icon_url else ''
-                    embeds_html += f'<div class="embed-author">{author_icon}{html.escape(embed.author.name)}</div>'
-                if embed.title:
-                    embeds_html += f'<div class="embed-title">{html.escape(embed.title)}</div>'
-                if embed.description:
-                    embeds_html += f'<div class="embed-description">{html.escape(embed.description)}</div>'
-                for field in embed.fields:
-                    embeds_html += f"""
-                    <div class="embed-field">
-                        <div class="embed-field-name">{html.escape(field.name)}</div>
-                        <div class="embed-field-value">{html.escape(field.value)}</div>
-                    </div>
-                    """
-                if embed.footer:
-                    footer_icon = f'<img src="{embed.footer.icon_url}" height="20" alt="Footer Icon">' if embed.footer.icon_url else ''
-                    embeds_html += f'<div class="embed-footer">{footer_icon}{html.escape(embed.footer.text)}</div>'
-                embeds_html += "</div>"
+        try:
+            user_id = int(channel.name.split('-')[1])
+        except (IndexError, ValueError):
+            user_id = None
 
-            attachments_html = ""
-            if message.attachments:
-                attachments_html = '<div class="attachments">'
-                for attachment in message.attachments:
-                    if attachment.content_type and attachment.content_type.startswith('image/'):
-                        attachments_html += f'''
-                        <div class="attachment">
-                            <img src="{attachment.url}" alt="Image">
-                        </div>
-                        '''
-                    else:
-                        attachments_html += f'''
-                        <div class="attachment">
-                            <a href="{attachment.url}" target="_blank">{html.escape(attachment.filename)}</a>
-                        </div>
-                        '''
-                attachments_html += '</div>'
+        transcript_data = {
+            "guild_id": interaction.guild.id,
+            "channel_id": channel.id,
+            "channel_name": channel.name,
+            "creator_id": user_id,
+            "closer_id": interaction.user.id,
+            "messages": messages_data
+        }
 
-            reactions_html = ""
-            if message.reactions:
-                reactions_html = '<div class="reactions">'
-                for reaction in message.reactions:
-                    emoji = reaction.emoji
-                    emoji_html = ""
-                    if isinstance(emoji, str):  
-                        emoji_html = emoji
-                    else:  
-                        emoji_html = f'<img class="emoji" src="{emoji.url}" alt="{emoji.name}">'
-                    reactions_html += f"""
-                    <div class="reaction">
-                        {emoji_html}
-                        <span>{reaction.count}</span>
-                    </div>
-                    """
-                reactions_html += '</div>'
+        headers = {
+            "X-API-Key": API_SECRET_KEY,
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            response = requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(transcript_data))
+            response.raise_for_status()
+            response_data = response.json()
+            transcript_url = f"{WEBAPP_URL}/transcript/{response_data['transcript_id']}"
+        except requests.exceptions.RequestException as e:
+            await interaction.followup.send(f"❌ Erreur lors de l'envoi du transcript au site web : {e}", ephemeral=True)
+            return None
 
-
-            html_content += f"""
-            <div class="message">
-                <div class="author">
-                    <img src="{message.author.display_avatar.url}" class="author-avatar" alt="Avatar">
-                    {html.escape(str(message.author))}
-                </div>
-                <div class="timestamp">{timestamp}</div>
-                <div class="content">{content}</div>
-                {embeds_html}
-                {attachments_html}
-                {reactions_html}
-            </div>
-            """
-
-        html_content += """
-        </body>
-        </html>
-        """
-
-        transcript_file = discord.File(
-            io.StringIO(html_content),
-            filename=f"transcript-{channel.name}.html"
-        )
-
+        # Envoi dans le salon de log
         log_channel = interaction.guild.get_channel(SUPPORT_LOG_CHANNEL_ID)
         if log_channel:
-            await log_channel.send(
-                f"📝 Transcript du ticket {channel.name}:",
-                file=transcript_file
+            log_embed = discord.Embed(
+                title="📝 Transcript Sauvegardé",
+                description=f"Le transcript pour le ticket `{channel.name}` a été sauvegardé.\n\n**Voir le transcript en ligne**",
+                color=discord.Color.blue(),
+                timestamp=datetime.datetime.utcnow()
             )
-            await interaction.response.send_message("✅ Transcript HTML envoyé dans les logs!", ephemeral=True)
+            await log_channel.send(embed=log_embed)
+        
+        await interaction.followup.send(f"✅ Transcript sauvegardé avec succès ! URL : {transcript_url}", ephemeral=True)
+        return transcript_url
 
     async def close_and_log_ticket(self, interaction):
         channel = interaction.channel
@@ -328,7 +95,7 @@ class CloseTicketView(View):
         except (IndexError, ValueError, discord.NotFound):
             user = None
         
-        await self.generate_transcript(interaction)
+        transcript_url = await self.generate_transcript(interaction)
         
         try:
             if user:
@@ -336,7 +103,8 @@ class CloseTicketView(View):
                     title="🔒 Ticket fermé",
                     description=(
                         f"Ton ticket a été fermé par {interaction.user.mention}\n"
-                        "Si tu as encore besoin d'aide, n'hésite pas à ouvrir un nouveau ticket!"
+                        "Si tu as encore besoin d'aide, n'hésite pas à ouvrir un nouveau ticket!\n\n"
+                        f"Tu peux consulter l'historique de la conversation ici." if transcript_url else ""
                     ),
                     color=discord.Color.red(),
                     timestamp=datetime.datetime.utcnow()
@@ -346,7 +114,7 @@ class CloseTicketView(View):
                 try:
                     await user.send(embed=close_embed)
                 except discord.Forbidden:
-                    await interaction.channel.send(
+                    await interaction.followup.send(
                         "⚠️ Impossible d'envoyer un message à l'utilisateur (MPs fermés)"
                     )
 
@@ -363,18 +131,15 @@ class CloseTicketView(View):
                     color=discord.Color.red(),
                     timestamp=datetime.datetime.utcnow()
                 )
+                if transcript_url:
+                    log_embed.description += f"\n\n**Voir le transcript en ligne**"
                 await log_channel.send(embed=log_embed)
                 
         except discord.Forbidden:
-            await interaction.response.send_message(
-                "Je n'ai pas la permission de fermer ce ticket.",
-                ephemeral=True
-            )
+            # La réponse est déjà deferred, on utilise followup
+            await interaction.followup.send("Je n'ai pas la permission de fermer ce ticket.", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(
-                f"Une erreur est survenue lors de la fermeture du ticket: {str(e)}",
-                ephemeral=True
-            )
+            await interaction.followup.send(f"Une erreur est survenue lors de la fermeture du ticket: {str(e)}", ephemeral=True)
 
 class Support(commands.Cog):
     def __init__(self, bot):
