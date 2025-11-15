@@ -20,9 +20,9 @@ class Status(commands.Cog):
         self.status_messages = None
         self.temp_status_task = None
         self.is_temp_status = False
-        self.update_status_info()
 
     async def cog_load(self):
+        await self.update_status_info()
         self.change_status_loop.start()
 
     def count_lines_of_code(self):
@@ -41,7 +41,7 @@ class Status(commands.Cog):
     def count_commands(self):
         return len(list(self.bot.tree.walk_commands()))
 
-    def update_status_info(self):
+    async def update_status_info(self):
         lines = self.count_lines_of_code()
         commands_count = self.count_commands()
         guilds = len(self.bot.guilds)
@@ -63,7 +63,7 @@ class Status(commands.Cog):
             return
 
         if not self.status_messages:
-            self.update_status_info()
+            await self.update_status_info()
 
         try:
             await self.bot.change_presence(
@@ -154,7 +154,7 @@ class Status(commands.Cog):
     @app_commands.command(name="updatestatus", description="Met à jour les informations du statut")
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
     async def update_status(self, interaction):
-        self.update_status_info()
+        await self.update_status_info()
         await interaction.response.send_message("✅ Les informations du statut ont été mises à jour!", ephemeral=True)
 
 
