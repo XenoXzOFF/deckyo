@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 import datetime
+import requests
 import discord
 
 TRANSCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'transcripts')
@@ -92,6 +93,21 @@ def create_app(bot=None):
         """Page d'accueil publique affichant les statistiques des tickets."""
         num_active = 0
         num_closed = 0
+        discord_members_online = "N/A"
+        discord_invite_url = "#"
+        discord_server_id = "1333136013203214499" # Votre ID de serveur Discord
+
+        try:
+            # Utilise l'API widget de Discord pour obtenir les infos
+            response = requests.get(f"https://discord.com/api/v9/guilds/{discord_server_id}/widget.json")
+            response.raise_for_status() # Lève une exception pour les codes d'erreur HTTP
+            widget_data = response.json()
+            discord_members_online = widget_data.get('presence_count', 'N/A')
+            discord_invite_url = widget_data.get('instant_invite', '#')
+        except requests.exceptions.RequestException as e:
+            print(f"Erreur lors de la récupération des informations du widget Discord: {e}")
+            # Les valeurs par défaut seront utilisées
+
         try:
             files = [f for f in os.listdir(TRANSCRIPTS_DIR) if f.endswith('.json')]
             bot = current_app.config.get('BOT_INSTANCE')
@@ -115,7 +131,12 @@ def create_app(bot=None):
         except OSError:
             # Le dossier n'existe pas encore, on ignore
             pass
-        return render_template('public_index.html', active_tickets=num_active, closed_tickets=num_closed)
+        return render_template('public_index.html', 
+                               active_tickets=num_active, 
+                               closed_tickets=num_closed,
+                               discord_members_online=discord_members_online,
+                               discord_invite_url=discord_invite_url,
+                               discord_server_id=discord_server_id)
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():

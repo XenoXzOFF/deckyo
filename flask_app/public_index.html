@@ -83,5 +83,22 @@
             <div class="label">Tickets Fermés</div>
         </div>
     </div>
+    <div class="discord-widget-container">
+        <h2>Rejoignez notre communauté</h2>
+        <p>Membres en ligne : <span class="badge bg-success">{{ discord_members_online }}</span></p>
+
+        <iframe 
+            src="https://discord.com/widget?id={{ discord_server_id }}&theme=dark" 
+            width="350" 
+            height="500" 
+            allowtransparency="true" 
+            frameborder="0" 
+            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
+        </iframe>
+
+        <a href="{{ discord_invite_url }}" target="_blank" class="btn btn-primary mt-3">
+            Rejoindre le serveur
+        </a>
+    </div>
 </body>
 </html>
