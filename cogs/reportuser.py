@@ -46,7 +46,7 @@ class ReportUser(commands.Cog):
         proof="Capture d'écran ou preuve (optionnel)"
     )
     @app_commands.choices(reason=REPORT_REASONS)
-    async def reportuser(self, interaction, user, reason, details, proof = None):
+    async def reportuser(self, interaction: discord.Interaction, user: discord.Member, reason: app_commands.Choice[str], details: str, proof: discord.Attachment = None):
         if user.id == interaction.user.id:
             error_embed = discord.Embed(
                 title="🚫 Erreur",
