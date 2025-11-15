@@ -22,8 +22,11 @@ bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 def run_flask_app():
     """Initialise et lance l'application Flask."""
-    host = '85.215.131.70'
-    port = 13966
+    # Utiliser '0.0.0.0' est crucial pour que l'application soit accessible
+    # depuis l'extérieur de son conteneur.
+    host = '0.0.0.0'
+    # Le port est souvent fourni par l'hébergeur via une variable d'environnement.
+    port = int(os.getenv('PORT', 13966))
     flask_app = create_app()
     flask_app.run(host=host, port=port, debug=False)
 
