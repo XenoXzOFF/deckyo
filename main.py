@@ -3,7 +3,7 @@ import threading
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands, tasks
-from webapp import create_app
+from flask_app import create_app
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
