@@ -85,7 +85,7 @@ class Status(commands.Cog):
         stream_channel="Nom de la chaîne si type Stream"
     )
     @app_commands.choices(activity_type=ACTIVITY_CHOICES)
-    async def set_status(self, interaction, status, duration, activity_type, stream_channel = None):
+    async def set_status(self, interaction: discord.Interaction, status: str, duration: int, activity_type: app_commands.Choice[str], stream_channel: str = None):
         if interaction.user.id not in OWNER_IDS:
             return await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True

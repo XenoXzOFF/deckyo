@@ -59,13 +59,13 @@ class MaJ(commands.Cog):
         ]
     )
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
-    async def mp(self, interaction, type_message):
+    async def mp(self, interaction: discord.Interaction, type_message: app_commands.Choice[str]):
         
         sent_count = 0
         failed_count = 0
         processed_owners = set()
 
-        message_template = PRESET_MESSAGES[type_message]
+        message_template = PRESET_MESSAGES[type_message.value]
         embed = discord.Embed(
             title=message_template["title"],
             description=message_template["description"],
@@ -106,7 +106,7 @@ class MaJ(commands.Cog):
             f"📨 Messages envoyés : {sent_count}\n"
             f"❌ Échecs : {failed_count}\n"
             f"👥 Propriétaires contactés : {len(processed_owners)}\n"
-            f"📝 Type de message : {type_message}\n"
+            f"📝 Type de message : {type_message.name}\n"
             f"⏱️ Temps total : ~{sent_count * 25} secondes"
         )
         
