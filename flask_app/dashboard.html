@@ -91,11 +91,6 @@
         <p>Créé le: {{ ticket.date | replace('T', ' ') | slice(0, 10) }}</p>
         <div class="card-footer">
             <p>Créateur: {{ ticket.creator_id }}</p>
-            {% if current_user.role == 'owner' %}
-            <form action="{{ url_for('delete_transcript', transcript_id=ticket.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce transcript ?'); event.stopPropagation();">
-                <button type="submit" class="delete-btn" title="Supprimer le transcript">🗑️</button>
-            </form>
-            {% endif %}
         </div>
     </a>
     {% else %}

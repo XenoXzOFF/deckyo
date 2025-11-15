@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status du Support - Deckyo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-dark: #1e1e2e; --bg-light: #27293d; --bg-lighter: #313244; --primary: #89b4fa; --text: #cdd6f4; --text-dark: #a6adc8; --red: #f38ba8; --green: #a6e3a1; --yellow: #f9e2af; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .header img {
+            width: 80px;
+            height: 80px;
+        }
+        .header h1 {
+            font-size: 36px;
+            color: #fff;
+            margin: 0;
+        }
+        .stats-container {
+            display: flex;
+            gap: 30px;
+        }
+        .stat-card {
+            background-color: var(--bg-light);
+            padding: 30px 40px;
+            border-radius: 12px;
+            border: 1px solid var(--bg-lighter);
+        }
+        .stat-card .number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-card .label {
+            font-size: 16px;
+            color: var(--text-dark);
+            margin-top: 5px;
+        }
+        .login-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('login') }}" class="login-link">Connexion Staff</a>
+    <div class="header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        <h1>Status du Support</h1>
+    </div>
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="number">{{ active_tickets }}</div>
+            <div class="label">Tickets Ouverts</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ closed_tickets }}</div>
+            <div class="label">Tickets Fermés</div>
+        </div>
+    </div>
+</body>
+</html>

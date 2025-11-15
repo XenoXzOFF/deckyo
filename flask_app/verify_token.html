@@ -45,7 +45,7 @@
         {% endwith %}
         <form method="POST">
             <div class="form-group">
-                <input type="text" name="token" id="token-input" placeholder="xxxx-xxxx" required inputmode="numeric" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9-]/g, '').replace(/(\--)/g, '-');">
+                <input type="text" name="token" id="token-input" placeholder="xxxx-xxxx" required pattern="\d{4}-\d{4}" title="Veuillez entrer le code au format xxxx-xxxx" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9-]/g, '').replace(/(\--)/g, '-');">
             </div>
             <button type="submit">Vérifier</button>
         </form>
