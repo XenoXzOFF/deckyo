@@ -35,19 +35,29 @@ class CloseTicketView(View):
     async def close_ticket(self, interaction, button):
         await interaction.response.defer()
         await self.bot_cog.close_and_log_ticket(interaction)
-    
-    async def generate_and_save_transcript(self, interaction: discord.Interaction):
-        channel = interaction.channel
 
-        if not WEBAPP_URL or not API_SECRET_KEY:
+class Support(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        # Ajoute la vue persistante pour qu'elle fonctionne après un redémarrage.
+        # On passe transcript_id=None car il sera déterminé au moment de l'interaction.
+        self.bot.add_view(CloseTicketView(self, transcript_id=None))
+
+    async def generate_and_save_transcript(self, interaction: discord.Interaction):
+        """Génère le contenu du transcript et l'envoie au site web pour sauvegarde ou mise à jour."""
+        channel = interaction.channel
+        
+        # Vérification de la configuration
+        if not WEBAPP_URL or not API_SECRET_KEY or not PUBLIC_WEBAPP_URL:
             await interaction.followup.send(
                 "❌ **Erreur de configuration du bot !**\n"
-                "L'URL du site web (`WEBAPP_URL`) ou la clé API (`API_SECRET_KEY`) n'est pas définie.\n"
+                "Une ou plusieurs variables d'environnement (WEBAPP_URL, PUBLIC_WEBAPP_URL, API_SECRET_KEY) ne sont pas définies.\n"
                 "Le transcript ne peut pas être sauvegardé. Veuillez contacter un administrateur.",
                 ephemeral=True
             )
             return None
 
+        # Récupération de l'historique
         messages_data = []
         async for message in channel.history(limit=None, oldest_first=True):
             messages_data.append({
@@ -60,6 +70,7 @@ class CloseTicketView(View):
                 "attachments": [att.url for att in message.attachments]
             })
 
+        # Récupération de l'ID de l'utilisateur
         try:
             user_id = int(channel.name.split('-')[1])
         except (IndexError, ValueError):
@@ -74,6 +85,7 @@ class CloseTicketView(View):
             await interaction.followup.send("❌ Erreur : Impossible de trouver l'ID du transcript dans le sujet de ce salon.", ephemeral=True)
             return None
 
+        # Préparation des données
         transcript_data = {
             "transcript_id": transcript_id, # On inclut l'ID pour la mise à jour
             "guild_id": interaction.guild.id,
@@ -84,12 +96,11 @@ class CloseTicketView(View):
             "messages": messages_data
         }
 
-        headers = {
-            "X-API-Key": API_SECRET_KEY,
-            "Content-Type": "application/json"
-        }
+        headers = {"X-API-Key": API_SECRET_KEY, "Content-Type": "application/json"}
         
+        # Envoi de la requête de mise à jour au site web
         try:
+            # On utilise une seule route qui gère la création/mise à jour
             response = requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(transcript_data), timeout=10)
             response.raise_for_status()
             
@@ -100,7 +111,8 @@ class CloseTicketView(View):
             await interaction.followup.send(f"❌ Erreur lors de l'envoi du transcript au site web : {e}", ephemeral=True)
             return None
 
-    async def close_and_log_ticket(self, interaction):
+    async def close_and_log_ticket(self, interaction: discord.Interaction):
+        """Génère le transcript, ferme le ticket et envoie les logs."""
         channel = interaction.channel
         log_channel = interaction.guild.get_channel(SUPPORT_LOG_CHANNEL_ID)
         
@@ -117,57 +129,42 @@ class CloseTicketView(View):
             await interaction.followup.send("❌ La fermeture a été annulée car la sauvegarde du transcript a échoué.", ephemeral=True)
             return
         
-        try:
-            if user:
+        # Envoi du message privé à l'utilisateur
+        if user:
+            try:
                 close_embed = discord.Embed(
                     title="🔒 Ticket fermé",
                     description=(
-                        f"Ton ticket a été fermé par {interaction.user.mention}\n"
+                        f"Ton ticket a été fermé par {interaction.user.mention}.\n"
                         "Si tu as encore besoin d'aide, n'hésite pas à ouvrir un nouveau ticket !\n\n"
-                        f"Tu peux consulter l'historique de la conversation ici." if transcript_url else ""
-                    ),
-                    color=discord.Color.red(),
-                    timestamp=datetime.datetime.utcnow()
-                )
-                close_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
-
-                if transcript_url:
-                    close_embed.url = transcript_url
-
-                try:
-                    await user.send(embed=close_embed)
-                except discord.Forbidden:
-                    # Pas besoin de notifier le staff ici, c'est une information pour l'utilisateur
-                    pass
-
-            await channel.delete()
-            
-            if log_channel:
-                log_embed = discord.Embed(
-                    title="🔒 Ticket fermé",
-                    description=(
-                        f"**Ticket:** {channel.name}\n"
-                        f"**Fermé par:** {interaction.user.mention}\n"
-                        f"**Utilisateur:** {user.mention if user else 'Non trouvé'}"
+                        "Tu peux consulter l'historique de la conversation ici."
                     ),
                     url=transcript_url,
                     color=discord.Color.red(),
                     timestamp=datetime.datetime.utcnow()
                 )
-                await log_channel.send(embed=log_embed)
-                
-        except discord.Forbidden:
-            # La réponse est déjà deferred, on utilise followup
-            await interaction.followup.send("Je n'ai pas la permission de fermer ce ticket.", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(f"Une erreur est survenue lors de la fermeture du ticket: {str(e)}", ephemeral=True)
+                close_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
+                await user.send(embed=close_embed)
+            except discord.Forbidden:
+                pass # L'utilisateur a les MPs fermés, on continue
 
-class Support(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        # Ajoute la vue persistante pour qu'elle fonctionne après un redémarrage.
-        # On passe transcript_id=None car il sera déterminé au moment de l'interaction.
-        self.bot.add_view(CloseTicketView(self, transcript_id=None))
+        # Suppression du salon
+        await channel.delete(reason=f"Ticket fermé par {interaction.user.name}")
+        
+        # Envoi du log de fermeture
+        if log_channel:
+            log_embed = discord.Embed(
+                title="🔒 Ticket fermé",
+                description=(
+                    f"**Ticket:** `{channel.name}`\n"
+                    f"**Fermé par:** {interaction.user.mention}\n"
+                    f"**Utilisateur:** {user.mention if user else 'Non trouvé'}"
+                ),
+                url=transcript_url,
+                color=discord.Color.red(),
+                timestamp=datetime.datetime.utcnow()
+            )
+            await log_channel.send(embed=log_embed)
 
     async def cog_load(self):
         """Ajoute dynamiquement le bouton du dashboard aux vues existantes au démarrage."""
