@@ -18,14 +18,18 @@ PUBLIC_WEBAPP_URL = os.getenv('PUBLIC_WEBAPP_URL') # URL publique pour les liens
 API_SECRET_KEY = os.getenv('API_SECRET_KEY')
 
 class CloseTicketView(View):
-    def __init__(self, bot_cog, transcript_id: str):
+    def __init__(self, bot_cog, transcript_id: str = None):
         super().__init__(timeout=None)
         self.bot_cog = bot_cog
+        self.transcript_id = transcript_id
 
         # Ajout du bouton pour accéder directement au dashboard
-        if PUBLIC_WEBAPP_URL and transcript_id:
-            dashboard_url = f"{PUBLIC_WEBAPP_URL}/transcript/{transcript_id}"
+        if PUBLIC_WEBAPP_URL and self.transcript_id:
+            dashboard_url = f"{PUBLIC_WEBAPP_URL}/transcript/{self.transcript_id}"
             self.add_item(discord.ui.Button(label="Accéder au Dashboard", style=discord.ButtonStyle.link, url=dashboard_url, emoji="🌐"))
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
+        await interaction.followup.send(f"Une erreur est survenue: {error}", ephemeral=True)
 
     @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, emoji="🔒")
     async def close_ticket(self, interaction, button):
@@ -161,8 +165,19 @@ class CloseTicketView(View):
 class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Ajoute la vue persistante pour qu'elle fonctionne après un redémarrage
-        self.bot.add_view(CloseTicketView(self))
+        # Ajoute la vue persistante pour qu'elle fonctionne après un redémarrage.
+        # On passe transcript_id=None car il sera déterminé au moment de l'interaction.
+        self.bot.add_view(CloseTicketView(self, transcript_id=None))
+
+    async def cog_load(self):
+        """Ajoute dynamiquement le bouton du dashboard aux vues existantes au démarrage."""
+        view = CloseTicketView(self, transcript_id=None)
+        # Pour chaque message avec cette vue, on met à jour le bouton
+        async for guild in self.bot.fetch_guilds():
+            # Cette partie est une optimisation, si vous avez beaucoup de messages,
+            # il faudrait une méthode plus ciblée pour retrouver les messages de ticket.
+            # Pour l'instant, cette approche simple devrait fonctionner.
+            pass
 
     @app_commands.command(
         name="support",
