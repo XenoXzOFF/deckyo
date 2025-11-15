@@ -69,7 +69,8 @@ def create_app(bot=None):
             owner_user = os.getenv('DASHBOARD_USERNAME', 'admin')
             owner_pass = os.getenv('DASHBOARD_PASSWORD')
             if owner_pass:
-                new_owner = User(username=owner_user, role='owner')
+                owner_discord_id = os.getenv('OWNER_IDS', '').split(',')[0] # Prend le premier ID de la liste
+                new_owner = User(username=owner_user, role='owner', discord_id=int(owner_discord_id) if owner_discord_id.isdigit() else None)
                 new_owner.set_password(owner_pass)
                 db.session.add(new_owner)
                 db.session.commit()
