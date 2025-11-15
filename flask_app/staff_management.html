@@ -9,8 +9,8 @@
     .form-group { margin-bottom: 20px; }
     label { display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 500; }
     input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid var(--bg-lighter); border-radius: 6px; background-color: var(--bg-dark); color: var(--text); font-size: 14px; }
-    button { padding: 12px 20px; border: none; border-radius: 6px; background-color: var(--primary); color: var(--bg-dark); cursor: pointer; font-weight: 600; font-size: 14px; transition: background-color 0.2s; }
-    button:hover { background-color: #a6e3a1; }
+    button { padding: 12px 20px; border: none; border-radius: 6px; background-color: var(--primary); color: #fff; cursor: pointer; font-weight: 600; font-size: 14px; transition: background-color 0.2s; }
+    button:hover { background-color: #a6e3a1; color: var(--bg-dark); }
     .staff-list { margin-top: 30px; }
     .staff-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--bg-lighter); }
     .staff-item:last-child { border-bottom: none; }
@@ -18,9 +18,9 @@
     .delete-btn { background-color: var(--red); }
     .delete-btn:hover { background-color: #e67a91; }
     .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; color: var(--bg-dark); font-weight: 500; }
-    .flash-success { background-color: var(--green); }
-    .flash-danger { background-color: var(--red); }
-    .flash-info { background-color: var(--yellow); }
+    .flash-success { background-color: var(--bg-lighter); color: var(--green); border: 1px solid var(--green); }
+    .flash-danger { background-color: var(--bg-lighter); color: var(--red); border: 1px solid var(--red); }
+    .flash-info { background-color: var(--bg-lighter); color: var(--yellow); border: 1px solid var(--yellow); }
 </style>
 
 <h1>Gestion du Staff</h1>

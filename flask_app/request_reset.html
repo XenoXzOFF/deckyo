@@ -17,8 +17,12 @@
         label { display: block; margin-bottom: 5px; color: var(--text-dark); font-size: 14px; }
         input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--bg-lighter); border-radius: 4px; background-color: var(--bg-dark); color: var(--text); box-sizing: border-box; }
         button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: var(--bg-dark); font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #a6e3a1; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #a6e3a1; color: var(--bg-dark); }
         .back-link { display: block; margin-top: 20px; color: var(--primary); text-decoration: none; font-size: 14px; }
+        .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: 500; }
+        .flash-danger { background-color: var(--bg-lighter); color: var(--red); border: 1px solid var(--red); }
+        .flash-info { background-color: var(--bg-lighter); color: var(--yellow); border: 1px solid var(--yellow); }
     </style>
 </head>
 <body>
