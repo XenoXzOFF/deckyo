@@ -306,6 +306,7 @@ def create_app(bot=None):
         return render_template('dashboard.html', active_tickets=active_tickets, closed_tickets=closed_tickets)
 
     @app.route('/admin/staff', methods=['GET', 'POST'])
+    @owner_required
     def manage_staff():
         """Page pour gérer les comptes staff."""
         if request.method == 'POST':
@@ -334,6 +335,7 @@ def create_app(bot=None):
         return render_template('staff_management.html', staff_accounts=staff_accounts)
 
     @app.route('/admin/staff/delete/<int:user_id>', methods=['POST'])
+    @owner_required
     def delete_staff(user_id):
         """Supprime un compte staff."""
         user_to_delete = User.query.get_or_404(user_id)
@@ -346,6 +348,7 @@ def create_app(bot=None):
         return redirect(url_for('manage_staff'))
 
     @app.route('/admin/staff/add_id/<int:user_id>', methods=['POST'])
+    @owner_required
     def add_discord_id(user_id):
         """Ajoute un ID Discord à un compte staff existant."""
         user_to_update = User.query.get_or_404(user_id)
