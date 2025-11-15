@@ -36,7 +36,7 @@ def owner_required(f):
 
 def create_app(bot=None):
     """Crée et configure une instance de l'application Flask."""
-    app = Flask(__name__, template_folder='templates')
+    app = Flask(__name__, template_folder='.')
 
     # Une clé secrète est nécessaire pour la sécurité des sessions et autres.
     # Il est recommandé de la définir via une variable d'environnement.
