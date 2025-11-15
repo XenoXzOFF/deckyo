@@ -270,16 +270,15 @@ class Support(commands.Cog):
 
         # Mise à jour du transcript avec l'ID du salon
         update_data = {"transcript_id": transcript_id, "channel_id": ticket_channel.id}
-        headers = {"X-API-Key": API_SECRET_KEY, "Content-Type": "application/json"}
-        requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(initial_transcript_data), timeout=10) # Update with channel_id
+        requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(update_data), timeout=10) # Update with channel_id
 
         embed = discord.Embed(
             title="🎫 Ticket de support",
             description=(
                 f"Bonjour,\n\n"
-                "{interaction.user.mention} a besoin d'aide sur son serveur!\n"
+                f"{interaction.user.mention} a besoin d'aide sur son serveur!\n"
                 "Pour discuter avec l'utilisateur, envoyez simplement un message dans ce salon.\n\n"
-                "Pour fermer le ticket, clique sur le bouton ci-dessous."
+                "Pour fermer le ticket, cliquez sur le bouton ci-dessous."
                 
             ),
             color=discord.Color.blue(),

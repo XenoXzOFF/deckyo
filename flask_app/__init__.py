@@ -41,7 +41,7 @@ def owner_required(f):
 
 def create_app(bot=None):
     """Crée et configure une instance de l'application Flask."""
-    app = Flask(__name__, template_folder='.', static_folder='../static')
+    app = Flask(__name__, template_folder='.', static_folder='../img', static_url_path='/img')
 
     # Une clé secrète est nécessaire pour la sécurité des sessions et autres.
     # Il est recommandé de la définir via une variable d'environnement.
@@ -118,18 +118,19 @@ def create_app(bot=None):
             user = User.query.filter_by(username=username).first()
 
             if user and user.discord_id:
-                token = secrets.token_hex(8)
-                user.reset_token = token
+                code = f"{secrets.randbelow(10**8):08d}" # Génère un code à 8 chiffres
+                user.reset_token = code
                 user.reset_token_expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
                 db.session.commit()
                 bot = app.config.get('BOT_INSTANCE')
 
                 async def send_reset_code():
                     try:
+                        formatted_code = f"{code[:4]}-{code[4:]}"
                         discord_user = await bot.fetch_user(user.discord_id)
                         embed = discord.Embed(
                             title="🔑 Réinitialisation de mot de passe",
-                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.\n\n**Code :** `{token}`",
+                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.\n\n**Code :** `{formatted_code}`",
                             color=discord.Color.orange()
                         )
                         await discord_user.send(embed=embed)
