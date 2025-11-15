@@ -65,21 +65,29 @@ def create_app(bot=None):
 
     with app.app_context():
         db.create_all()
-        # Crée l'utilisateur owner s'il n'existe pas
-        if not User.query.filter_by(role='owner').first():
-            owner_user = os.getenv('DASHBOARD_USERNAME', 'admin')
-            owner_pass = os.getenv('DASHBOARD_PASSWORD')
-            if owner_pass:
-                owner_discord_id = os.getenv('OWNER_IDS', '').split(',')[0] # Prend le premier ID de la liste
-                # Correction: S'assurer que l'ID est bien un entier avant de le passer
-                discord_id_to_set = None
-                if owner_discord_id and owner_discord_id.isdigit():
-                    discord_id_to_set = int(owner_discord_id)
-                new_owner = User(username=owner_user, role='owner', discord_id=discord_id_to_set)
-                new_owner.set_password(owner_pass)
-                db.session.add(new_owner)
+        # Gère le compte propriétaire au démarrage pour garantir la synchronisation
+        owner_username = os.getenv('DASHBOARD_USERNAME', 'admin')
+        owner_password = os.getenv('DASHBOARD_PASSWORD')
+        owner = User.query.filter_by(role='owner').first()
+
+        if owner:
+            # Si le propriétaire existe, on met à jour son mot de passe si défini
+            if owner_password:
+                owner.set_password(owner_password)
                 db.session.commit()
-                print("🎉 Compte propriétaire créé avec succès !")
+                print("🔑 Le mot de passe du compte propriétaire a été synchronisé.")
+        elif owner_password:
+            # Si le propriétaire n'existe pas et qu'un mot de passe est fourni, on le crée
+            owner_discord_id_str = os.getenv('OWNER_IDS', '').split(',')[0]
+            discord_id_to_set = None
+            if owner_discord_id_str and owner_discord_id_str.isdigit():
+                discord_id_to_set = int(owner_discord_id_str)
+            
+            new_owner = User(username=owner_username, role='owner', discord_id=discord_id_to_set)
+            new_owner.set_password(owner_password)
+            db.session.add(new_owner)
+            db.session.commit()
+            print("🎉 Compte propriétaire créé avec succès !")
 
     # Crée le dossier des transcripts s'il n'existe pas
     os.makedirs(TRANSCRIPTS_DIR, exist_ok=True)
