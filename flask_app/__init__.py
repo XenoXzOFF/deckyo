@@ -442,4 +442,22 @@ def create_app(bot=None):
 
         return render_template('transcript.html', transcript=transcript_data, transcript_id=transcript_id, is_channel_active=is_channel_active)
 
+    @app.cli.command("reset-owner-password")
+    def reset_owner_password():
+        """Réinitialise le mot de passe de l'utilisateur propriétaire."""
+        owner = User.query.filter_by(role='owner').first()
+        if not owner:
+            print("❌ Aucun utilisateur propriétaire trouvé. Créez-en un d'abord.")
+            return
+
+        new_password = os.getenv('DASHBOARD_PASSWORD')
+        if not new_password:
+            print("❌ La variable d'environnement DASHBOARD_PASSWORD n'est pas définie.")
+            print("Veuillez la définir dans votre fichier .env avant d'exécuter cette commande.")
+            return
+
+        owner.set_password(new_password)
+        db.session.commit()
+        print(f"✅ Le mot de passe pour l'utilisateur '{owner.username}' a été réinitialisé avec succès !")
+
     return app
