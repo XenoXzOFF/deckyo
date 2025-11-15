@@ -14,16 +14,16 @@
         h1 { color: #fff; margin-bottom: 10px; }
         p { color: var(--text-dark); margin-bottom: 20px; font-size: 14px; }
         .form-group { margin-bottom: 15px; text-align: left; }
-        .code-inputs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .code-inputs input {
-            width: 40px;
-            height: 50px;
-            text-align: center;
-            font-size: 24px;
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
             border: 1px solid var(--bg-lighter);
             border-radius: 6px;
             background-color: var(--bg-dark);
             color: var(--text);
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 8px; /* Simule les espaces entre les chiffres */
         }
         button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: var(--bg-dark); font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #a6e3a1; color: var(--bg-dark); }
@@ -44,45 +44,18 @@
             {% endif %}
         {% endwith %}
         <form method="POST">
-            <div class="code-inputs" id="code-form">
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <span style="font-size: 24px; align-self: center;">-</span>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
-                <input type="text" maxlength="1" class="code-input" placeholder="0" required>
+            <div class="form-group">
+                <input type="text" name="token" id="token-input" placeholder="xxxx-xxxx" required inputmode="numeric" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9-]/g, '').replace(/(\--)/g, '-');">
             </div>
-            <input type="hidden" name="token" id="hidden-token">
             <button type="submit">Vérifier</button>
         </form>
     </div>
 
     <script>
-        const inputs = document.querySelectorAll('.code-input');
-        const form = document.getElementById('code-form');
-        const hiddenToken = document.getElementById('hidden-token');
-
-        inputs.forEach((input, index) => {
-            input.addEventListener('input', () => {
-                if (input.value.length === 1 && index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                }
-            });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
-                    inputs[index - 1].focus();
-                }
-            });
-        });
-
-        form.parentElement.addEventListener('submit', (e) => {
-            let code = '';
-            inputs.forEach(input => code += input.value);
-            hiddenToken.value = code;
+        // Enlève le tiret avant de soumettre le formulaire
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const tokenInput = document.getElementById('token-input');
+            tokenInput.value = tokenInput.value.replace(/-/g, '');
         });
     </script>
 </body>
