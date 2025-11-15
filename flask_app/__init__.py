@@ -128,15 +128,12 @@ def create_app(bot=None):
                     try:
                         formatted_code = f"{code[:4]}-{code[4:]}"
                         discord_user = await bot.fetch_user(user.discord_id)
-                        description = (
-                            f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. "
-                            f"Ce code expirera dans 5 minutes.\n\n**Code :**\n```{formatted_code}```"
-                        )
                         embed = discord.Embed(
                             title="🔑 Réinitialisation de mot de passe",
-                            description=description,
+                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.",
                             color=discord.Color.orange(),
                         )
+                        embed.add_field(name="Votre code", value=f"```{formatted_code}```", inline=False)
                         await discord_user.send(embed=embed)
                     except Exception as e:
                         print(f"Erreur lors de l'envoi du code de réinitialisation à {user.username}: {e}")
