@@ -14,7 +14,10 @@
     .staff-list { margin-top: 30px; }
     .staff-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--bg-lighter); }
     .staff-item:last-child { border-bottom: none; }
-    .staff-item span { font-weight: 500; }
+    .staff-item .info { flex-grow: 1; }
+    .staff-item .info span { font-weight: 500; display: block; }
+    .staff-item .info .discord-id { font-size: 12px; color: var(--text-dark); }
+    .staff-item .actions { display: flex; gap: 10px; }
     .delete-btn { background-color: var(--red); }
     .delete-btn:hover { background-color: #e67a91; }
     .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: 500; }
@@ -56,10 +59,25 @@
     <h2>Comptes Staff existants</h2>
     {% for account in staff_accounts %}
     <div class="staff-item">
-        <span>{{ account.username }} ({{ account.discord_id }})</span>
-        <form action="{{ url_for('delete_staff', user_id=account.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer le compte de {{ account.username }} ?');">
-            <button type="submit" class="delete-btn">Supprimer</button>
-        </form>
+        <div class="info">
+            <span>{{ account.username }}</span>
+            {% if account.discord_id %}
+                <span class="discord-id">ID Discord: {{ account.discord_id }}</span>
+            {% else %}
+                <span class="discord-id" style="color: var(--red);">ID Discord manquant</span>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if not account.discord_id %}
+            <form action="{{ url_for('add_discord_id', user_id=account.id) }}" method="POST">
+                <input type="text" name="discord_id" placeholder="Ajouter ID Discord" required pattern="\d{17,20}" style="padding: 8px; width: 180px; display: inline-block;">
+                <button type="submit" style="width: auto;">Ajouter</button>
+            </form>
+            {% endif %}
+            <form action="{{ url_for('delete_staff', user_id=account.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer le compte de {{ account.username }} ?');">
+                <button type="submit" class="delete-btn" style="width: auto;">Supprimer</button>
+            </form>
+        </div>
     </div>
     {% else %}
     <p>Aucun compte staff trouvé.</p>

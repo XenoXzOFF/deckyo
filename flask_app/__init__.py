@@ -70,7 +70,11 @@ def create_app(bot=None):
             owner_pass = os.getenv('DASHBOARD_PASSWORD')
             if owner_pass:
                 owner_discord_id = os.getenv('OWNER_IDS', '').split(',')[0] # Prend le premier ID de la liste
-                new_owner = User(username=owner_user, role='owner', discord_id=int(owner_discord_id) if owner_discord_id.isdigit() else None)
+                # Correction: S'assurer que l'ID est bien un entier avant de le passer
+                discord_id_to_set = None
+                if owner_discord_id and owner_discord_id.isdigit():
+                    discord_id_to_set = int(owner_discord_id)
+                new_owner = User(username=owner_user, role='owner', discord_id=discord_id_to_set)
                 new_owner.set_password(owner_pass)
                 db.session.add(new_owner)
                 db.session.commit()
@@ -290,6 +294,27 @@ def create_app(bot=None):
             flash(f"Le compte '{user_to_delete.username}' a été supprimé.", "success")
         else:
             flash("Vous ne pouvez pas supprimer un compte propriétaire.", "danger")
+        return redirect(url_for('manage_staff'))
+
+    @app.route('/admin/staff/add_id/<int:user_id>', methods=['POST'])
+    @login_required
+    @owner_required
+    def add_discord_id(user_id):
+        """Ajoute un ID Discord à un compte staff existant."""
+        user_to_update = User.query.get_or_404(user_id)
+        discord_id_str = request.form.get('discord_id')
+
+        if user_to_update.role == 'staff' and discord_id_str and discord_id_str.isdigit():
+            discord_id = int(discord_id_str)
+            if User.query.filter_by(discord_id=discord_id).first():
+                flash("Cet ID Discord est déjà utilisé par un autre compte.", "danger")
+            else:
+                user_to_update.discord_id = discord_id
+                db.session.commit()
+                flash(f"L'ID Discord pour '{user_to_update.username}' a été mis à jour.", "success")
+        else:
+            flash("ID Discord invalide ou utilisateur incorrect.", "danger")
+        
         return redirect(url_for('manage_staff'))
 
     @app.route('/api/transcripts/init', methods=['POST'])
