@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify, render_template, abort, redirect, url
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 import discord
 
 TRANSCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'transcripts')
@@ -18,6 +19,9 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='staff') # Roles: 'owner', 'staff'
+    discord_id = db.Column(db.BigInteger, unique=True, nullable=True)
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    reset_token_expiration = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -102,6 +106,73 @@ def create_app(bot=None):
 
         return render_template('login.html')
 
+    @app.route('/request_reset', methods=['GET', 'POST'])
+    def request_password_reset():
+        """Page pour demander une réinitialisation de mot de passe."""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        
+        if request.method == 'POST':
+            username = request.form.get('username')
+            user = User.query.filter_by(username=username).first()
+
+            if user and user.discord_id:
+                token = secrets.token_hex(8)
+                user.reset_token = token
+                user.reset_token_expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+                db.session.commit()
+
+                async def send_reset_code():
+                    try:
+                        discord_user = await bot.fetch_user(user.discord_id)
+                        embed = discord.Embed(
+                            title="🔑 Réinitialisation de mot de passe",
+                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.\n\n**Code :** `{token}`",
+                            color=discord.Color.orange()
+                        )
+                        await discord_user.send(embed=embed)
+                    except Exception as e:
+                        print(f"Erreur lors de l'envoi du code de réinitialisation à {user.username}: {e}")
+
+                if bot:
+                    asyncio.run_coroutine_threadsafe(send_reset_code(), bot.loop)
+                    flash("Si un compte avec cet nom d'utilisateur et un ID Discord associé existe, un code de réinitialisation a été envoyé en message privé.", "info")
+                    return redirect(url_for('reset_with_token'))
+                else:
+                    flash("Le bot n'est pas connecté, impossible d'envoyer le code.", "danger")
+            else:
+                flash("Si un compte avec cet nom d'utilisateur et un ID Discord associé existe, un code de réinitialisation a été envoyé en message privé.", "info")
+            
+            return redirect(url_for('login'))
+
+        return render_template('request_reset.html')
+
+    @app.route('/reset_with_token', methods=['GET', 'POST'])
+    def reset_with_token():
+        """Page pour entrer le code et le nouveau mot de passe."""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            token = request.form.get('token')
+            new_password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+
+            user = User.query.filter_by(reset_token=token).first()
+
+            if not user or user.reset_token_expiration < datetime.datetime.utcnow():
+                flash("Le code est invalide ou a expiré.", "danger")
+                return redirect(url_for('reset_with_token'))
+            
+            user.set_password(new_password)
+            user.reset_token = None
+            user.reset_token_expiration = None
+            db.session.commit()
+            flash("Votre mot de passe a été réinitialisé avec succès ! Vous pouvez maintenant vous connecter.", "success")
+            return redirect(url_for('login'))
+
+        return render_template('reset_password.html')
+
     @app.route('/logout')
     @login_required
     def logout():
@@ -149,11 +220,19 @@ def create_app(bot=None):
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
+            discord_id_str = request.form.get('discord_id')
 
             if User.query.filter_by(username=username).first():
                 flash("Ce nom d'utilisateur existe déjà.", "danger")
+            elif not discord_id_str or not discord_id_str.isdigit():
+                flash("L'ID Discord est invalide.", "danger")
             else:
-                new_staff = User(username=username, role='staff')
+                discord_id = int(discord_id_str)
+                if User.query.filter_by(discord_id=discord_id).first():
+                    flash("Cet ID Discord est déjà associé à un autre compte.", "danger")
+                    return redirect(url_for('manage_staff'))
+
+                new_staff = User(username=username, role='staff', discord_id=discord_id)
                 new_staff.set_password(password)
                 db.session.add(new_staff)
                 db.session.commit()
@@ -237,7 +316,15 @@ def create_app(bot=None):
         except (IOError, json.JSONDecodeError) as e:
             abort(500, description=f"Erreur lors de la lecture du transcript: {e}")
 
-        return render_template('transcript.html', transcript=transcript_data, transcript_id=transcript_id)
+        # Vérifie si le salon du ticket est toujours actif
+        is_channel_active = False
+        if bot:
+            channel_id = transcript_data.get('channel_id')
+            # bot.get_channel() est une recherche rapide dans le cache
+            if channel_id and bot.get_channel(channel_id):
+                is_channel_active = True
+
+        return render_template('transcript.html', transcript=transcript_data, transcript_id=transcript_id, is_channel_active=is_channel_active)
 
     @app.route('/transcript/<transcript_id>/delete', methods=['POST'])
     @login_required

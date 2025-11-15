@@ -38,6 +38,11 @@
             color: #b9bbbe;
             font-size: 14px;
         }
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
         input[type="text"], input[type="password"] {
             width: 100%;
             padding: 10px;
@@ -46,6 +51,21 @@
             background-color: #40444b;
             color: #dcddde;
             box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .forgot-password {
+            display: block;
+            text-align: right;
+            font-size: 12px;
+            color: #7289da;
+            text-decoration: none;
+            margin-top: -10px;
+            margin-bottom: 15px;
         }
         button {
             width: 100%;
@@ -88,10 +108,29 @@
             </div>
             <div class="form-group">
                 <label for="password">Mot de passe</label>
-                <input type="password" id="password" name="password" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required>
+                    <span class="toggle-password" onclick="togglePasswordVisibility('password')">👁️</span>
+                </div>
             </div>
+            <a href="{{ url_for('request_password_reset') }}" class="forgot-password">Mot de passe oublié ?</a>
             <button type="submit">Se connecter</button>
         </form>
     </div>
+
+    <script>
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            const toggle = field.nextElementSibling;
+            if (field.type === "password") {
+                field.type = "text";
+                toggle.textContent = "🙈";
+            } else {
+                field.type = "password";
+                toggle.textContent = "👁️";
+            }
+        }
+    </script>
+
 </body>
 </html>
