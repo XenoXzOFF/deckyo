@@ -25,6 +25,12 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+        .header .back-link {
+            color: #7289da;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
         .header h1 {
             margin: 0;
             font-size: 24px;
@@ -95,11 +101,19 @@
             color: #ffffff;
             cursor: pointer;
         }
+        .reply-form .close-btn {
+            background-color: #f04747;
+            margin-left: 10px;
+        }
+        .reply-form .close-btn:hover {
+            background-color: #d84141;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Retour au Dashboard</a>
             <h1>Transcript du salon #{{ transcript.channel_name }}</h1>
             <p>
                 Serveur : {{ transcript.guild_id }} | {{ transcript.messages | length }} messages
@@ -130,7 +144,10 @@
         <div class="reply-form">
             <form action="{{ url_for('send_ticket_message', transcript_id=transcript_id) }}" method="POST">
                 <textarea name="message" placeholder="Écrire une réponse dans le ticket..." required></textarea>
-                <button type="submit">Envoyer</button>
+                <button type="submit">Envoyer la réponse</button>
+            </form>
+            <form action="{{ url_for('close_ticket_from_web', transcript_id=transcript_id) }}" method="POST" style="display: inline;">
+                <button type="submit" class="close-btn">Fermer le ticket</button>
             </form>
         </div>
         {% endif %}

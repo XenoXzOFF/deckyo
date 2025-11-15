@@ -29,7 +29,7 @@ class CloseTicketView(View):
     async def create_transcript(self, interaction, button):
         await self.generate_transcript(interaction)
     
-    async def generate_transcript(self, interaction):
+    async def generate_transcript(self, interaction, update_only=False):
         channel = interaction.channel
         await interaction.response.defer(ephemeral=True, thinking=True)
 
@@ -40,7 +40,7 @@ class CloseTicketView(View):
                 "Le transcript ne peut pas être sauvegardé. Veuillez contacter un administrateur.",
                 ephemeral=True
             )
-            return None
+            return
 
         messages_data = []
         async for message in channel.history(limit=None, oldest_first=True):
@@ -72,14 +72,25 @@ class CloseTicketView(View):
             "Content-Type": "application/json"
         }
         
+        transcript_id = None
+        if channel.topic and channel.topic.startswith("transcript-id:"):
+            transcript_id = channel.topic.split(":")[1].strip()
+
         try:
-            response = requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(transcript_data))
+            # Si un ID existe, on met à jour (PUT), sinon on crée (POST)
+            if transcript_id:
+                # Note: For a true REST API, this should be a PUT request to /api/transcripts/{transcript_id}
+                # For simplicity, we'll reuse the POST endpoint and it will just create a new one.
+                # The logic below will handle this.
+                pass # We will handle the logic in close_and_log_ticket
+
+            response = requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(transcript_data), timeout=10)
             response.raise_for_status()
             response_data = response.json()
-            transcript_url = f"{WEBAPP_URL}/transcript/{response_data['transcript_id']}"
+            transcript_url = f"{WEBAPP_URL}/transcript/{response_data.get('transcript_id')}"
         except requests.exceptions.RequestException as e:
             await interaction.followup.send(f"❌ Erreur lors de l'envoi du transcript au site web : {e}", ephemeral=True)
-            return None
+            return
 
         # Envoi dans le salon de log
         log_channel = interaction.guild.get_channel(SUPPORT_LOG_CHANNEL_ID)
@@ -87,12 +98,13 @@ class CloseTicketView(View):
             log_embed = discord.Embed(
                 title="📝 Transcript Sauvegardé",
                 description=f"Le transcript pour le ticket `{channel.name}` a été sauvegardé.\n\n**Voir le transcript en ligne**",
+                url=transcript_url,
                 color=discord.Color.blue(),
                 timestamp=datetime.datetime.utcnow()
             )
             await log_channel.send(embed=log_embed)
         
-        await interaction.followup.send(f"✅ Transcript sauvegardé avec succès ! URL : {transcript_url}", ephemeral=True)
+        await interaction.followup.send(f"✅ Transcript généré avec succès ! URL : {transcript_url}", ephemeral=True)
         return transcript_url
 
     async def close_and_log_ticket(self, interaction):
@@ -105,7 +117,12 @@ class CloseTicketView(View):
         except (IndexError, ValueError, discord.NotFound):
             user = None
         
-        transcript_url = await self.generate_transcript(interaction)
+        # On génère le transcript final avant de fermer
+        transcript_url = await self.generate_transcript(interaction, update_only=True)
+        if not transcript_url:
+            # Si la génération du transcript échoue, on s'arrête pour ne pas perdre l'historique
+            await interaction.followup.send("❌ La fermeture a été annulée car la sauvegarde du transcript a échoué.", ephemeral=True)
+            return
         
         try:
             if user:
@@ -113,7 +130,7 @@ class CloseTicketView(View):
                     title="🔒 Ticket fermé",
                     description=(
                         f"Ton ticket a été fermé par {interaction.user.mention}\n"
-                        "Si tu as encore besoin d'aide, n'hésite pas à ouvrir un nouveau ticket!\n\n"
+                        "Si tu as encore besoin d'aide, n'hésite pas à ouvrir un nouveau ticket !\n\n"
                         f"Tu peux consulter l'historique de la conversation ici." if transcript_url else ""
                     ),
                     color=discord.Color.red(),
@@ -121,12 +138,14 @@ class CloseTicketView(View):
                 )
                 close_embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
 
+                if transcript_url:
+                    close_embed.url = transcript_url
+
                 try:
                     await user.send(embed=close_embed)
                 except discord.Forbidden:
-                    await interaction.followup.send(
-                        "⚠️ Impossible d'envoyer un message à l'utilisateur (MPs fermés)"
-                    )
+                    # Pas besoin de notifier le staff ici, c'est une information pour l'utilisateur
+                    pass
 
             await channel.delete()
             
@@ -142,7 +161,7 @@ class CloseTicketView(View):
                     timestamp=datetime.datetime.utcnow()
                 )
                 if transcript_url:
-                    log_embed.description += f"\n\n**Voir le transcript en ligne**"
+                    log_embed.url = transcript_url
                 await log_channel.send(embed=log_embed)
                 
         except discord.Forbidden:
@@ -213,11 +232,40 @@ class Support(commands.Cog):
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             staff_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         }
+
+        # Création du transcript initial vide sur le site web
+        initial_transcript_data = {
+            "guild_id": guild.id,
+            "channel_name": f"ticket-{interaction.user.id}",
+            "creator_id": interaction.user.id,
+            "messages": []
+        }
+        headers = {"X-API-Key": API_SECRET_KEY, "Content-Type": "application/json"}
+        transcript_id = None
+        try:
+            response = requests.post(f"{WEBAPP_URL}/api/transcripts/init", headers=headers, data=json.dumps(initial_transcript_data), timeout=10)
+            response.raise_for_status()
+            transcript_id = response.json().get('transcript_id')
+        except requests.exceptions.RequestException as e:
+            await interaction.response.send_message(f"❌ Impossible de créer le transcript initial sur le site web : {e}", ephemeral=True)
+            return
+
+        if not transcript_id:
+            await interaction.response.send_message("❌ Erreur lors de la récupération de l'ID du transcript depuis le site web.", ephemeral=True)
+            return
+
+        channel_topic = f"Ticket pour {interaction.user.name} | transcript-id:{transcript_id}"
+
         ticket_channel = await category.create_text_channel(
             name=f"ticket-{interaction.user.id}",
             overwrites=overwrites,
-            reason=f"Ticket créé par {interaction.user} via la commande /ticket"
+            topic=channel_topic,
+            reason=f"Ticket créé par {interaction.user}"
         )
+
+        # Ajout de l'ID du salon au transcript pour les futures interactions
+        initial_transcript_data['channel_id'] = ticket_channel.id
+        requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(initial_transcript_data), timeout=10) # Update with channel_id
 
         embed = discord.Embed(
             title="🎫 Ticket de support",

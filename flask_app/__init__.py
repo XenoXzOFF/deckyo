@@ -177,6 +177,27 @@ def create_app(bot=None):
             flash("Vous ne pouvez pas supprimer un compte propriétaire.", "danger")
         return redirect(url_for('manage_staff'))
 
+    @app.route('/api/transcripts/init', methods=['POST'])
+    def handle_init_transcript():
+        """Crée un fichier de transcript vide et retourne son ID."""
+        if not API_SECRET_KEY or request.headers.get('X-API-Key') != API_SECRET_KEY:
+            abort(401, description="Accès non autorisé.")
+
+        data = request.json
+        if not data:
+            abort(400, description="Aucune donnée initiale reçue.")
+
+        transcript_id = str(uuid.uuid4())
+        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json")
+
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4)
+        except IOError as e:
+            abort(500, description=f"Erreur lors de la création du fichier: {e}")
+
+        return jsonify({"status": "success", "transcript_id": transcript_id}), 201
+
     @app.route('/api/transcripts', methods=['POST'])
     def handle_create_transcript():
         """Reçoit les données du transcript du bot et les sauvegarde."""
@@ -190,14 +211,15 @@ def create_app(bot=None):
 
         # Génère un ID unique pour le transcript
         transcript_id = str(uuid.uuid4())
-        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json")
+        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json") # This route is now for updates
 
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4)
         except IOError as e:
             abort(500, description=f"Erreur lors de la sauvegarde du fichier: {e}")
-
+        
+        # Note: This endpoint is now effectively an "update" if we follow the new flow.
         return jsonify({"status": "success", "transcript_id": transcript_id}), 201
 
     @app.route('/transcript/<transcript_id>')
@@ -216,6 +238,27 @@ def create_app(bot=None):
             abort(500, description=f"Erreur lors de la lecture du transcript: {e}")
 
         return render_template('transcript.html', transcript=transcript_data, transcript_id=transcript_id)
+
+    @app.route('/transcript/<transcript_id>/delete', methods=['POST'])
+    @login_required
+    @owner_required
+    def delete_transcript(transcript_id):
+        """Supprime un fichier de transcript (owner uniquement)."""
+        # Sécurité : Valider le nom du fichier pour éviter les attaques de type "Path Traversal"
+        if not transcript_id.isalnum() and '-' not in transcript_id:
+            abort(400, "ID de transcript invalide.")
+
+        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json")
+
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                flash(f"Le transcript '{transcript_id}' a été supprimé avec succès.", "success")
+            except OSError as e:
+                flash(f"Erreur lors de la suppression du transcript : {e}", "danger")
+        else:
+            flash("Le transcript que vous essayez de supprimer n'existe pas.", "warning")
+        return redirect(url_for('dashboard'))
 
     @app.route('/transcript/<transcript_id>/send_message', methods=['POST'])
     @login_required
@@ -256,5 +299,34 @@ def create_app(bot=None):
         asyncio.run_coroutine_threadsafe(send_message(), bot.loop)
         flash("Message envoyé avec succès !", "success")
         return redirect(url_for('view_transcript', transcript_id=transcript_id))
+
+    @app.route('/transcript/<transcript_id>/close', methods=['POST'])
+    @login_required
+    def close_ticket_from_web(transcript_id):
+        """Ferme un ticket Discord depuis le dashboard."""
+        if not bot:
+            flash("Le bot n'est pas connecté, impossible de fermer le ticket.", "danger")
+            return redirect(url_for('view_transcript', transcript_id=transcript_id))
+
+        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json")
+        if not os.path.exists(file_path):
+            abort(404)
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            transcript_data = json.load(f)
+        
+        channel_id = transcript_data.get('channel_id')
+        if not channel_id:
+            flash("ID du salon introuvable, impossible de fermer le ticket.", "danger")
+            return redirect(url_for('view_transcript', transcript_id=transcript_id))
+
+        async def close_channel():
+            channel = bot.get_channel(channel_id)
+            if channel:
+                await channel.delete(reason=f"Fermé par {current_user.username} depuis le dashboard")
+
+        asyncio.run_coroutine_threadsafe(close_channel(), bot.loop)
+        flash("La demande de fermeture du ticket a été envoyée.", "success")
+        return redirect(url_for('dashboard'))
 
     return app

@@ -61,6 +61,18 @@
             justify-content: space-between;
             align-items: center;
         }
+        .transcript-item .transcript-info {
+            flex-grow: 1;
+        }
+        .transcript-item form {
+            display: inline;
+            margin-left: 15px;
+        }
+        .transcript-item .delete-btn {
+            background-color: #f04747;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
         .transcript-item a {
             color: #7289da;
             text-decoration: none;
@@ -86,8 +98,15 @@
         <ul class="transcript-list">
             {% for transcript in transcripts %}
             <li class="transcript-item">
-                <a href="{{ url_for('view_transcript', transcript_id=transcript.id) }}">#{{ transcript.channel_name }}</a>
-                <span>Créé le {{ transcript.date | replace('T', ' ') | slice(0, 16) }}</span>
+                <div class="transcript-info">
+                    <a href="{{ url_for('view_transcript', transcript_id=transcript.id) }}">#{{ transcript.channel_name }}</a>
+                    <span>Créé le {{ transcript.date | replace('T', ' ') | slice(0, 16) }}</span>
+                </div>
+                {% if current_user.role == 'owner' %}
+                <form action="{{ url_for('delete_transcript', transcript_id=transcript.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce transcript ? Cette action est irréversible.');">
+                    <button type="submit" class="delete-btn">Supprimer</button>
+                </form>
+                {% endif %}
             </li>
             {% else %}
             <li class="transcript-item">Aucun transcript trouvé.</li>
