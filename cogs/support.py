@@ -313,23 +313,6 @@ class Support(commands.Cog):
         else:
             guild_info = "❌ Cette commande doit être utilisée dans un serveur"
 
-        embed = discord.Embed(
-            title="🎫 Ticket de support",
-            description=(
-                "Bonjour,\n\n"
-                f"{interaction.user.mention} a besoin d'aide sur son serveur!\n"
-                "Pour discuter avec l'utilisateur, envoie simplement un message dans ce salon.\n\n"
-                f"{guild_info}\n\n"  
-                "Pour fermer le ticket, clique sur le bouton ci-dessous.\n\n"
-                "Ce ticket est enregistré."
-            ),
-            color=discord.Color.blue(),
-            timestamp=datetime.datetime.utcnow()
-        )
-        embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
-        if command_guild.icon:
-            embed.set_thumbnail(url=command_guild.icon.url)
-
         view = CloseTicketView(self, transcript_id=transcript_id)
         
         await ticket_channel.send(embed=embed, view=view)

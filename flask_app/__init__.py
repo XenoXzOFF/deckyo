@@ -122,6 +122,7 @@ def create_app(bot=None):
                 user.reset_token = token
                 user.reset_token_expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
                 db.session.commit()
+                bot = app.config.get('BOT_INSTANCE')
 
                 async def send_reset_code():
                     try:
@@ -356,6 +357,7 @@ def create_app(bot=None):
 
         # Vérifie si le salon du ticket est toujours actif
         is_channel_active = False
+        bot = app.config.get('BOT_INSTANCE')
         if bot:
             channel_id = transcript_data.get('channel_id')
             # bot.get_channel() est une recherche rapide dans le cache
@@ -389,6 +391,7 @@ def create_app(bot=None):
     @login_required
     def send_ticket_message(transcript_id):
         """Envoie un message dans un ticket depuis le web."""
+        bot = app.config.get('BOT_INSTANCE')
         if not bot:
             flash("Le bot n'est pas connecté, impossible d'envoyer le message.", "danger")
             return redirect(url_for('view_transcript', transcript_id=transcript_id))
@@ -429,6 +432,7 @@ def create_app(bot=None):
     @login_required
     def close_ticket_from_web(transcript_id):
         """Ferme un ticket Discord depuis le dashboard."""
+        bot = app.config.get('BOT_INSTANCE')
         if not bot:
             flash("Le bot n'est pas connecté, impossible de fermer le ticket.", "danger")
             return redirect(url_for('view_transcript', transcript_id=transcript_id))
