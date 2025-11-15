@@ -47,6 +47,8 @@ def create_app(bot=None):
     # Il est recommandé de la définir via une variable d'environnement.
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'une-cle-secrete-par-defaut-pour-le-dev')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dashboard.db')
+    # Ajout pour passer le bot aux routes
+    app.config['BOT_INSTANCE'] = bot
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     API_SECRET_KEY = os.getenv('API_SECRET_KEY')
@@ -135,8 +137,8 @@ def create_app(bot=None):
 
                 if bot:
                     asyncio.run_coroutine_threadsafe(send_reset_code(), bot.loop)
-                    flash("Si un compte avec cet nom d'utilisateur et un ID Discord associé existe, un code de réinitialisation a été envoyé en message privé.", "info")
-                    return redirect(url_for('reset_with_token'))
+                    flash("Si un compte correspondant existe, un code a été envoyé par MP sur Discord. Veuillez le saisir ci-dessous.", "info")
+                    return redirect(url_for('verify_token'))
                 else:
                     flash("Le bot n'est pas connecté, impossible d'envoyer le code.", "danger")
             else:
@@ -146,31 +148,46 @@ def create_app(bot=None):
 
         return render_template('request_reset.html')
 
-    @app.route('/reset_with_token', methods=['GET', 'POST'])
-    def reset_with_token():
-        """Page pour entrer le code et le nouveau mot de passe."""
+    @app.route('/verify_token', methods=['GET', 'POST'])
+    def verify_token():
+        """Page pour vérifier le code de réinitialisation."""
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
 
         if request.method == 'POST':
             token = request.form.get('token')
-            new_password = request.form.get('password')
-            confirm_password = request.form.get('confirm_password')
-
             user = User.query.filter_by(reset_token=token).first()
 
             if not user or user.reset_token_expiration < datetime.datetime.utcnow():
                 flash("Le code est invalide ou a expiré.", "danger")
-                return redirect(url_for('reset_with_token'))
+                return redirect(url_for('verify_token'))
             
+            # Le token est valide, on redirige vers la page de définition du mot de passe
+            return redirect(url_for('reset_password', token=token))
+
+        return render_template('verify_token.html')
+
+    @app.route('/reset_password/<token>', methods=['GET', 'POST'])
+    def reset_password(token):
+        """Page pour définir le nouveau mot de passe."""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+
+        user = User.query.filter_by(reset_token=token).first()
+        if not user or user.reset_token_expiration < datetime.datetime.utcnow():
+            flash("Le lien de réinitialisation est invalide ou a expiré.", "danger")
+            return redirect(url_for('request_password_reset'))
+
+        if request.method == 'POST':
+            new_password = request.form.get('password')
             user.set_password(new_password)
             user.reset_token = None
             user.reset_token_expiration = None
             db.session.commit()
             flash("Votre mot de passe a été réinitialisé avec succès ! Vous pouvez maintenant vous connecter.", "success")
             return redirect(url_for('login'))
-
-        return render_template('reset_password.html')
+        
+        return render_template('reset_password.html', token=token)
 
     @app.route('/logout')
     @login_required

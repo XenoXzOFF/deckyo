@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mot de passe oublié</title>
+    <title>Vérifier le code</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,13 +18,15 @@
         input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--bg-lighter); border-radius: 4px; background-color: var(--bg-dark); color: var(--text); box-sizing: border-box; }
         button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: var(--bg-dark); font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #a6e3a1; }
-        .back-link { display: block; margin-top: 20px; color: var(--primary); text-decoration: none; font-size: 14px; }
+        .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; color: var(--bg-dark); font-weight: 500; }
+        .flash-danger { background-color: var(--red); }
+        .flash-info { background-color: var(--yellow); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Mot de passe oublié</h1>
-        <p>Entrez votre nom d'utilisateur. Si un compte correspondant est trouvé, un code de réinitialisation sera envoyé à l'utilisateur Discord associé.</p>
+        <h1>Vérification du code</h1>
+        <p>Veuillez entrer le code que vous avez reçu par message privé sur Discord.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -34,12 +36,11 @@
         {% endwith %}
         <form method="POST">
             <div class="form-group">
-                <label for="username">Nom d'utilisateur</label>
-                <input type="text" id="username" name="username" required>
+                <label for="token">Code de réinitialisation</label>
+                <input type="text" id="token" name="token" required>
             </div>
-            <button type="submit">Envoyer le code</button>
+            <button type="submit">Vérifier</button>
         </form>
-        <a href="{{ url_for('login') }}" class="back-link">&larr; Retour à la connexion</a>
     </div>
 </body>
 </html>
