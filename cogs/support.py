@@ -280,6 +280,32 @@ class Support(commands.Cog):
             timestamp=datetime.datetime.utcnow()
         )
         embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
+        
+        command_guild = interaction.guild
+        if command_guild:
+            try:
+                invite_channel = next(
+                    (channel for channel in command_guild.text_channels 
+                     if channel.permissions_for(command_guild.me).create_instant_invite),
+                    None
+                )
+                
+                invite_url = "❌ Impossible de créer une invitation"
+                if invite_channel:
+                    invite = await invite_channel.create_invite(max_age=3600)
+                    invite_url = invite.url
+
+                guild_info = (
+                    f"📋 **Informations du serveur:**\n"
+                    f"Nom: {command_guild.name}\n"
+                    f"Propriétaire: {command_guild.owner.mention if command_guild.owner else 'Non trouvé'}\n"
+                    f"Membres: {command_guild.member_count}\n"
+                    f"Invitation: {invite_url}"
+                )
+            except discord.Forbidden:
+                guild_info = "❌ Impossible de récupérer les informations du serveur"
+        else:
+            guild_info = "❌ Cette commande doit être utilisée dans un serveur"
 
         view = CloseTicketView(self, transcript_id=transcript_id)
         
