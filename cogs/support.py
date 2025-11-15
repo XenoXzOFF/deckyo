@@ -31,7 +31,7 @@ class CloseTicketView(View):
     async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
         await interaction.followup.send(f"Une erreur est survenue: {error}", ephemeral=True)
 
-    @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, emoji="🔒")
+    @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, emoji="🔒", custom_id="support_ticket:close")
     async def close_ticket(self, interaction, button):
         await interaction.response.defer()
         await self.bot_cog.close_and_log_ticket(interaction)
