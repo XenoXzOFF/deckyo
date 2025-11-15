@@ -46,14 +46,7 @@ class ReportUser(commands.Cog):
         proof="Capture d'écran ou preuve (optionnel)"
     )
     @app_commands.choices(reason=REPORT_REASONS)
-    async def reportuser(
-        self, 
-        interaction: discord.Interaction, 
-        user: discord.Member,
-        reason: app_commands.Choice[str],
-        details: str,
-        proof: discord.Attachment = None
-    ):
+    async def reportuser(self, interaction, user, reason, details, proof = None):
         if user.id == interaction.user.id:
             error_embed = discord.Embed(
                 title="🚫 Erreur",
@@ -160,7 +153,7 @@ class ReportUser(commands.Cog):
             )
 
         class UnbanModal(discord.ui.Modal, title="Raison du débannissement"):
-            def __init__(self, unban_type: str):
+            def __init__(self, unban_type):
                 super().__init__()
                 self.unban_type = unban_type
                 
@@ -172,7 +165,7 @@ class ReportUser(commands.Cog):
                 max_length=500
             )
             
-            async def on_submit(self, modal_interaction: discord.Interaction):
+            async def on_submit(self, modal_interaction):
                 await modal_interaction.response.defer(ephemeral=True)
                 
                 raison_text = self.raison.value
@@ -182,7 +175,7 @@ class ReportUser(commands.Cog):
                 else:
                     await self.execute_local_unban(modal_interaction, raison_text)
             
-            async def execute_global_unban(self, modal_interaction: discord.Interaction, raison_text: str):
+            async def execute_global_unban(self, modal_interaction, raison_text):
                 """Exécute un déban global"""
                 unbanned_guilds = []
                 failed_guilds = []
@@ -283,7 +276,7 @@ class ReportUser(commands.Cog):
                 
                 await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
             
-            async def execute_local_unban(self, modal_interaction: discord.Interaction, raison_text: str):
+            async def execute_local_unban(self, modal_interaction, raison_text):
                 guild = interaction.guild
                 
                 # Vérifications
@@ -370,7 +363,7 @@ class ReportUser(commands.Cog):
                     )
 
         class BanModal(discord.ui.Modal, title="Raison du bannissement"):
-            def __init__(self, ban_type: str):
+            def __init__(self, ban_type):
                 super().__init__()
                 self.ban_type = ban_type
                 
@@ -390,7 +383,7 @@ class ReportUser(commands.Cog):
                 max_length=10
             )
             
-            async def on_submit(self, modal_interaction: discord.Interaction):
+            async def on_submit(self, modal_interaction):
                 await modal_interaction.response.defer(ephemeral=True)
                 
                 raison_text = self.raison.value
@@ -430,7 +423,7 @@ class ReportUser(commands.Cog):
                 else:
                     await self.execute_local_ban(modal_interaction, raison_text, duree_text, duration, ban_until)
             
-            async def execute_global_ban(self, modal_interaction: discord.Interaction, raison_text: str):
+            async def execute_global_ban(self, modal_interaction, raison_text):
                 banned_guilds = []
                 failed_guilds = []
                 already_banned = []
@@ -491,7 +484,7 @@ class ReportUser(commands.Cog):
                 
                 await modal_interaction.followup.send(embed=response_embed, ephemeral=True)
             
-            async def execute_local_ban(self, modal_interaction: discord.Interaction, raison_text: str, duree_text: str, duration, ban_until):
+            async def execute_local_ban(self, modal_interaction, raison_text, duree_text, duration, ban_until):
                 guild = interaction.guild
                 
                 if not guild.me.guild_permissions.ban_members:
@@ -581,7 +574,7 @@ class ReportUser(commands.Cog):
                 emoji="🌍",
                 row=0
             )
-            async def ban_global(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def ban_global(self, interaction_btn, button):
                 if interaction_btn.user.id not in OWNER_IDS:
                     error_embed = discord.Embed(
                         title="🚫 Permission refusée",
@@ -601,7 +594,7 @@ class ReportUser(commands.Cog):
                 emoji="🔨",
                 row=0
             )
-            async def ban_local(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def ban_local(self, interaction_btn, button):
                 if interaction_btn.user.id not in OWNER_IDS:
                     error_embed = discord.Embed(
                         title="🚫 Permission refusée",
@@ -621,7 +614,7 @@ class ReportUser(commands.Cog):
                 emoji="🌍",
                 row=0
             )
-            async def unban_global(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def unban_global(self, interaction_btn, button):
                 if interaction_btn.user.id not in OWNER_IDS:
                     error_embed = discord.Embed(
                         title="🚫 Permission refusée",
@@ -641,7 +634,7 @@ class ReportUser(commands.Cog):
                 emoji="🔓",
                 row=0
             )
-            async def unban_local(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def unban_local(self, interaction_btn, button):
                 if interaction_btn.user.id not in OWNER_IDS:
                     error_embed = discord.Embed(
                         title="🚫 Permission refusée",
@@ -661,7 +654,7 @@ class ReportUser(commands.Cog):
                 emoji="🔄",
                 row=1
             )
-            async def pending(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def pending(self, interaction_btn, button):
                 await self.update_status(interaction_btn, "pending")
 
             @discord.ui.button(
@@ -671,7 +664,7 @@ class ReportUser(commands.Cog):
                 emoji="✅",
                 row=1
             )
-            async def resolved(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def resolved(self, interaction_btn, button):
                 await self.update_status(interaction_btn, "resolved")
 
             @discord.ui.button(
@@ -681,10 +674,10 @@ class ReportUser(commands.Cog):
                 emoji="❌",
                 row=1
             )
-            async def dismissed(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
+            async def dismissed(self, interaction_btn, button):
                 await self.update_status(interaction_btn, "dismissed")
 
-            async def update_status(self, interaction_btn: discord.Interaction, status_key: str):
+            async def update_status(self, interaction_btn, status_key):
                 if interaction_btn.user.id not in OWNER_IDS:
                     error_embed = discord.Embed(
                         title="🚫 Permission refusée",

@@ -12,7 +12,7 @@ class CommandsBlock(commands.Cog):
         self.bot = bot
         self.bot.tree.interaction_check = self.interaction_check
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction):
         """Check global pour toutes les commandes slash"""
         if interaction.user.id in OWNER_IDS:
             return True

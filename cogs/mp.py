@@ -59,11 +59,7 @@ class MaJ(commands.Cog):
         ]
     )
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
-    async def mp(
-        self, 
-        interaction: discord.Interaction, 
-        type_message: str
-    ):
+    async def mp(self, interaction, type_message):
         
         sent_count = 0
         failed_count = 0
@@ -121,7 +117,7 @@ class MaJ(commands.Cog):
         description="[Déprécié] Utilisez /mp à la place"
     )
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
-    async def majmp(self, interaction: discord.Interaction):
+    async def majmp(self, interaction):
         await interaction.response.send_message(
             "⚠️ Cette commande est dépréciée. Utilisez `/mp` à la place !",
             ephemeral=True

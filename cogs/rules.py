@@ -27,7 +27,7 @@ class Rules(commands.Cog):
 
         class AcceptButton(discord.ui.View):
             @discord.ui.button(label="Accepter les règles", style=discord.ButtonStyle.green)
-            async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+            async def accept(self, interaction, button):
                 role = interaction.guild.get_role(RULES_ACCEPTED_ROLE_ID)
                 if role:
                     try:

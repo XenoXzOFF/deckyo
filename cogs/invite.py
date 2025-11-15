@@ -8,7 +8,7 @@ class Invite(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="invite", description="🔗 Obtiens le lien d'invitation du bot")
-    async def invite(self, interaction: discord.Interaction):
+    async def invite(self, interaction):
         embed = discord.Embed(
             title="🔗 Invitation du bot",
             description="[Clique ici pour inviter le bot à ton serveur!](https://discord.com/oauth2/authorize?client_id=1192768970466533426&permissions=8&integration_type=0&scope=bot+applications.commands)\n\nSi le lien ne marche pas : https://discord.com/oauth2/authorize?client_id=1192768970466533426&permissions=8&integration_type=0&scope=bot+applications.commands \n\nBesoin d'aide? /support sur ton serveur.",

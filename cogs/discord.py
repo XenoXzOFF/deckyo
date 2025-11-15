@@ -2,16 +2,19 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import datetime
+import os
+
+SUPPORT_DISCORD_INVITE = os.getenv('SUPPORT_DISCORD_INVITE', 'https://discord.gg/3ENxmBPjej')
 
 class InviteDiscord(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @app_commands.command(name="discord", description="🔗 Obtiens le lien du serveur discord")
-    async def InviteDiscord(self, interaction: discord.Interaction):
+    async def InviteDiscord(self, interaction):
         embed = discord.Embed(
             title="🔗 Serveur discord",
-            description="[Clique ici pour rejoindre le serveur discord!](https://discord.gg/h4zqdGYs)\n\nSi le lien ne marche pas : https://discord.gg/h4zqdGYs \n\nBesoin d'aide? /support sur ton serveur.",
+            description=f"[Clique ici pour rejoindre le serveur discord!]({SUPPORT_DISCORD_INVITE})\n\nSi le lien ne marche pas : {SUPPORT_DISCORD_INVITE} \n\nBesoin d'aide? /support sur ton serveur.",
             color=discord.Color.blue(),
             timestamp=datetime.datetime.utcnow()
         )

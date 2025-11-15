@@ -20,14 +20,14 @@ class CloseTicketView(View):
         self.bot = bot
 
     @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, emoji="🔒")
-    async def close_ticket(self, interaction: discord.Interaction, button: Button):
+    async def close_ticket(self, interaction, button):
         await self.close_and_log_ticket(interaction)
 
     @discord.ui.button(label="Transcript", style=discord.ButtonStyle.gray, emoji="📝")
-    async def create_transcript(self, interaction: discord.Interaction, button: Button):
+    async def create_transcript(self, interaction, button):
         await self.generate_transcript(interaction)
 
-    async def generate_transcript(self, interaction: discord.Interaction):
+    async def generate_transcript(self, interaction):
         channel = interaction.channel
         
         html_content = f"""
@@ -318,7 +318,7 @@ class CloseTicketView(View):
             )
             await interaction.response.send_message("✅ Transcript HTML envoyé dans les logs!", ephemeral=True)
 
-    async def close_and_log_ticket(self, interaction: discord.Interaction):
+    async def close_and_log_ticket(self, interaction):
         channel = interaction.channel
         log_channel = interaction.guild.get_channel(SUPPORT_LOG_CHANNEL_ID)
         
@@ -384,7 +384,7 @@ class Support(commands.Cog):
         name="support",
         description="🎫 Ouvre un ticket de support"
     )
-    async def ticket(self, interaction: discord.Interaction):
+    async def ticket(self, interaction):
         if not interaction.user.guild_permissions.administrator:
             embed = discord.Embed(
                 title="❌ Erreur de permission",
@@ -540,7 +540,7 @@ class Support(commands.Cog):
                 "Assure-toi que tes messages privés sont ouverts."
             )
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message):
         if message.author.bot:
             return
 

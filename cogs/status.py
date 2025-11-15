@@ -85,8 +85,7 @@ class Status(commands.Cog):
         stream_channel="Nom de la chaîne si type Stream"
     )
     @app_commands.choices(activity_type=ACTIVITY_CHOICES)
-    async def set_status(self, interaction: discord.Interaction, status: str, duration: int,
-                         activity_type: app_commands.Choice[str], stream_channel: str = None):
+    async def set_status(self, interaction, status, duration, activity_type, stream_channel = None):
         if interaction.user.id not in OWNER_IDS:
             return await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
@@ -138,7 +137,7 @@ class Status(commands.Cog):
             pass
 
     @app_commands.command(name="resetstatus", description="Réinitialise le statut du bot")
-    async def reset_status(self, interaction: discord.Interaction):
+    async def reset_status(self, interaction):
         if interaction.user.id not in OWNER_IDS:
             return await interaction.response.send_message(
                 "🚫 Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True
@@ -154,7 +153,7 @@ class Status(commands.Cog):
 
     @app_commands.command(name="updatestatus", description="Met à jour les informations du statut")
     @app_commands.check(lambda interaction: interaction.user.id in OWNER_IDS)
-    async def update_status(self, interaction: discord.Interaction):
+    async def update_status(self, interaction):
         self.update_status_info()
         await interaction.response.send_message("✅ Les informations du statut ont été mises à jour!", ephemeral=True)
 
