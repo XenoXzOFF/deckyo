@@ -4,7 +4,7 @@ import uuid
 import functools
 import asyncio
 from flask import Flask, request, jsonify, render_template, abort, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user, current_app
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
