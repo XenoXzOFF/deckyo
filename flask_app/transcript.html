@@ -1,156 +1,67 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcript - {{ transcript.channel_name }}</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #36393f;
-            color: #dcddde;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background-color: #2f3136;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .header {
-            border-bottom: 1px solid #40444b;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        .header .back-link {
-            color: #7289da;
-            text-decoration: none;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .header p {
-            margin: 5px 0 0;
-            color: #b9bbbe;
-        }
-        .message-group {
-            display: flex;
-            margin-bottom: 20px;
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 15px;
-        }
-        .message-content {
-            flex-grow: 1;
-        }
-        .author-info {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .author-name {
-            font-weight: 500;
-            color: #ffffff;
-            margin-right: 10px;
-        }
-        .timestamp {
-            font-size: 12px;
-            color: #72767d;
-        }
-        .message-text {
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        .message-text img {
-            max-width: 100%;
-            border-radius: 4px;
-            margin-top: 5px;
-        }
-        .reply-form {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #40444b;
-        }
-        .reply-form textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: 10px;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            background-color: #40444b;
-            color: #dcddde;
-            box-sizing: border-box;
-            resize: vertical;
-        }
-        .reply-form button {
-            margin-top: 10px;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            background-color: #5865f2;
-            color: #ffffff;
-            cursor: pointer;
-        }
-        .reply-form .close-btn {
-            background-color: #f04747;
-            margin-left: 10px;
-        }
-        .reply-form .close-btn:hover {
-            background-color: #d84141;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Retour au Dashboard</a>
-            <h1>Transcript du salon #{{ transcript.channel_name }}</h1>
-            <p>
-                Serveur : {{ transcript.guild_id }} | {{ transcript.messages | length }} messages
-            </p>
-        </div>
+{% extends "base.html" %}
+{% block title %}Transcript - {{ transcript.channel_name }}{% endblock %}
 
-        {% for message in transcript.messages %}
-        <div class="message-group">
-            <img src="{{ message.author_avatar }}" alt="Avatar" class="avatar">
-            <div class="message-content">
-                <div class="author-info">
-                    <span class="author-name">{{ message.author_name }}</span>
-                    <span class="timestamp">{{ message.timestamp | replace('T', ' ') | slice(0, 19) }}</span>
-                </div>
-                {% if message.content %}
-                <div class="message-text">{{ message.content }}</div>
-                {% endif %}
-                {% for attachment in message.attachments %}
-                <div class="message-text">
-                    <a href="{{ attachment }}" target="_blank"><img src="{{ attachment }}" alt="Pièce jointe"></a>
-                </div>
-                {% endfor %}
-            </div>
+{% block content %}
+<style>
+    .transcript-header { border-bottom: 1px solid var(--bg-lighter); padding-bottom: 15px; margin-bottom: 30px; }
+    .transcript-header h1 { margin: 0; font-size: 24px; color: #fff; }
+    .transcript-header p { margin: 5px 0 0; color: var(--text-dark); }
+    .message-group { display: flex; margin-bottom: 25px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 15px; flex-shrink: 0; }
+    .message-content { flex-grow: 1; }
+    .author-info { display: flex; align-items: center; margin-bottom: 5px; }
+    .author-name { font-weight: 600; color: #fff; margin-right: 10px; }
+    .timestamp { font-size: 12px; color: var(--text-dark); }
+    .message-text { line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+    .message-text img { max-width: 100%; border-radius: 6px; margin-top: 8px; }
+    .reply-form { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--bg-lighter); }
+    .reply-form textarea { width: 100%; min-height: 100px; padding: 12px; border: 1px solid var(--bg-lighter); border-radius: 6px; background-color: var(--bg-dark); color: var(--text); resize: vertical; font-family: 'Inter', sans-serif; font-size: 14px; }
+    .reply-form .button-group { margin-top: 10px; display: flex; gap: 10px; }
+    .reply-form button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+    .reply-form .send-btn { background-color: var(--primary); color: var(--bg-dark); }
+    .reply-form .close-btn { background-color: var(--red); color: var(--bg-dark); }
+    .reply-form button:hover { opacity: 0.8; }
+</style>
+
+<div class="transcript-header">
+    <h1>#{{ transcript.channel_name }}</h1>
+    <p>
+        Serveur : {{ transcript.guild_id }} | {{ transcript.messages | length }} messages
+    </p>
+</div>
+
+{% for message in transcript.messages %}
+<div class="message-group">
+    <img src="{{ message.author_avatar }}" alt="Avatar" class="avatar">
+    <div class="message-content">
+        <div class="author-info">
+            <span class="author-name">{{ message.author_name }}</span>
+            <span class="timestamp">{{ message.timestamp | replace('T', ' ') | slice(0, 19) }}</span>
+        </div>
+        {% if message.content %}
+        <div class="message-text">{{ message.content }}</div>
+        {% endif %}
+        {% for attachment in message.attachments %}
+        <div class="message-text">
+            <a href="{{ attachment }}" target="_blank"><img src="{{ attachment }}" alt="Pièce jointe"></a>
         </div>
         {% endfor %}
+    </div>
+</div>
+{% endfor %}
 
-        {% if is_channel_active and current_user.is_authenticated and (current_user.role == 'staff' or current_user.role == 'owner') %}
-        <div class="reply-form">
-            <form action="{{ url_for('send_ticket_message', transcript_id=transcript_id) }}" method="POST">
-                <textarea name="message" placeholder="Écrire une réponse dans le ticket..." required></textarea>
-                <button type="submit">Envoyer la réponse</button>
-            </form>
-            <form action="{{ url_for('close_ticket_from_web', transcript_id=transcript_id) }}" method="POST" style="display: inline;">
+{% if is_channel_active and current_user.is_authenticated and (current_user.role == 'staff' or current_user.role == 'owner') %}
+<div class="reply-form">
+    <form action="{{ url_for('send_ticket_message', transcript_id=transcript_id) }}" method="POST">
+        <textarea name="message" placeholder="Écrire une réponse dans le ticket..." required></textarea>
+        <div class="button-group">
+            <button type="submit" class="send-btn">Envoyer la réponse</button>
+            <form action="{{ url_for('close_ticket_from_web', transcript_id=transcript_id) }}" method="POST" style="display: contents;">
                 <button type="submit" class="close-btn">Fermer le ticket</button>
             </form>
         </div>
-        {% endif %}
-    </div>
-</body>
-</html>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -293,7 +293,7 @@ def create_app(bot=None):
 
     @app.route('/api/transcripts', methods=['POST'])
     def handle_create_transcript():
-        """Reçoit les données du transcript du bot et les sauvegarde."""
+        """Reçoit les données du transcript du bot et les sauvegarde (crée ou met à jour)."""
         # Sécurité : Vérifie la clé API
         if not API_SECRET_KEY or request.headers.get('X-API-Key') != API_SECRET_KEY:
             abort(401, description="Accès non autorisé.")
@@ -302,9 +302,17 @@ def create_app(bot=None):
         if not data:
             abort(400, description="Aucune donnée reçue.")
 
-        # Génère un ID unique pour le transcript
-        transcript_id = str(uuid.uuid4())
-        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json") # This route is now for updates
+        # Vérifie si un ID est fourni pour une mise à jour
+        transcript_id = data.get('transcript_id')
+        if not transcript_id:
+            # Si pas d'ID, on génère un nouveau (ne devrait plus arriver avec la nouvelle logique)
+            transcript_id = str(uuid.uuid4())
+        
+        # Sécurité : Valider le nom du fichier pour éviter les attaques de type "Path Traversal"
+        if not transcript_id.replace('-', '').isalnum():
+            abort(400, "ID de transcript invalide.")
+
+        file_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_id}.json")
 
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -312,7 +320,6 @@ def create_app(bot=None):
         except IOError as e:
             abort(500, description=f"Erreur lors de la sauvegarde du fichier: {e}")
         
-        # Note: This endpoint is now effectively an "update" if we follow the new flow.
         return jsonify({"status": "success", "transcript_id": transcript_id}), 201
 
     @app.route('/transcript/<transcript_id>')

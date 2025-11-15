@@ -13,25 +13,27 @@ SUPPORT_GUILD_ID = int(os.getenv('SUPPORT_GUILD_ID'))
 TICKET_CATEGORY_ID = int(os.getenv('TICKET_CATEGORY_ID'))
 SUPPORT_LOG_CHANNEL_ID = int(os.getenv('SUPPORT_LOG_CHANNEL_ID'))
 STAFF_ROLE_ID = int(os.getenv('STAFF_ROLE_ID'))
-WEBAPP_URL = os.getenv('WEBAPP_URL')
+WEBAPP_URL = os.getenv('WEBAPP_URL') # URL locale pour les requêtes API (ex: http://127.0.0.1:13966)
+PUBLIC_WEBAPP_URL = os.getenv('PUBLIC_WEBAPP_URL') # URL publique pour les liens dans Discord
 API_SECRET_KEY = os.getenv('API_SECRET_KEY')
 
 class CloseTicketView(View):
-    def __init__(self, bot):
+    def __init__(self, bot_cog, transcript_id: str):
         super().__init__(timeout=None)
-        self.bot = bot
+        self.bot_cog = bot_cog
+
+        # Ajout du bouton pour accéder directement au dashboard
+        if PUBLIC_WEBAPP_URL and transcript_id:
+            dashboard_url = f"{PUBLIC_WEBAPP_URL}/transcript/{transcript_id}"
+            self.add_item(discord.ui.Button(label="Accéder au Dashboard", style=discord.ButtonStyle.link, url=dashboard_url, emoji="🌐"))
 
     @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, emoji="🔒")
     async def close_ticket(self, interaction, button):
-        await self.close_and_log_ticket(interaction)
-
-    @discord.ui.button(label="Transcript", style=discord.ButtonStyle.gray, emoji="📝")
-    async def create_transcript(self, interaction, button):
-        await self.generate_transcript(interaction)
+        await interaction.response.defer()
+        await self.bot_cog.close_and_log_ticket(interaction)
     
-    async def generate_transcript(self, interaction, update_only=False):
+    async def generate_and_save_transcript(self, interaction: discord.Interaction):
         channel = interaction.channel
-        await interaction.response.defer(ephemeral=True, thinking=True)
 
         if not WEBAPP_URL or not API_SECRET_KEY:
             await interaction.followup.send(
@@ -40,7 +42,7 @@ class CloseTicketView(View):
                 "Le transcript ne peut pas être sauvegardé. Veuillez contacter un administrateur.",
                 ephemeral=True
             )
-            return
+            return None
 
         messages_data = []
         async for message in channel.history(limit=None, oldest_first=True):
@@ -49,7 +51,8 @@ class CloseTicketView(View):
                 "author_avatar": str(message.author.display_avatar.url),
                 "content": message.content,
                 "timestamp": message.created_at.isoformat(),
-                "embeds": [embed.to_dict() for embed in message.embeds],
+                # On ne sauvegarde que les embeds qui ne sont pas générés par le bot lui-même pour la clarté
+                "embeds": [embed.to_dict() for embed in message.embeds if embed.author.name != self.bot.user.name],
                 "attachments": [att.url for att in message.attachments]
             })
 
@@ -58,7 +61,17 @@ class CloseTicketView(View):
         except (IndexError, ValueError):
             user_id = None
 
+        # Récupération de l'ID du transcript depuis le topic
+        transcript_id = None
+        if channel.topic and channel.topic.startswith("transcript-id:"):
+            transcript_id = channel.topic.split(":")[1].strip()
+
+        if not transcript_id:
+            await interaction.followup.send("❌ Erreur : Impossible de trouver l'ID du transcript dans le sujet de ce salon.", ephemeral=True)
+            return None
+
         transcript_data = {
+            "transcript_id": transcript_id, # On inclut l'ID pour la mise à jour
             "guild_id": interaction.guild.id,
             "channel_id": channel.id,
             "channel_name": channel.name,
@@ -72,40 +85,16 @@ class CloseTicketView(View):
             "Content-Type": "application/json"
         }
         
-        transcript_id = None
-        if channel.topic and channel.topic.startswith("transcript-id:"):
-            transcript_id = channel.topic.split(":")[1].strip()
-
         try:
-            # Si un ID existe, on met à jour (PUT), sinon on crée (POST)
-            if transcript_id:
-                # Note: For a true REST API, this should be a PUT request to /api/transcripts/{transcript_id}
-                # For simplicity, we'll reuse the POST endpoint and it will just create a new one.
-                # The logic below will handle this.
-                pass # We will handle the logic in close_and_log_ticket
-
             response = requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(transcript_data), timeout=10)
             response.raise_for_status()
-            response_data = response.json()
-            transcript_url = f"{WEBAPP_URL}/transcript/{response_data.get('transcript_id')}"
+            
+            # On utilise l'URL publique pour le lien
+            transcript_url = f"{PUBLIC_WEBAPP_URL}/transcript/{transcript_id}"
+            return transcript_url
         except requests.exceptions.RequestException as e:
             await interaction.followup.send(f"❌ Erreur lors de l'envoi du transcript au site web : {e}", ephemeral=True)
-            return
-
-        # Envoi dans le salon de log
-        log_channel = interaction.guild.get_channel(SUPPORT_LOG_CHANNEL_ID)
-        if log_channel:
-            log_embed = discord.Embed(
-                title="📝 Transcript Sauvegardé",
-                description=f"Le transcript pour le ticket `{channel.name}` a été sauvegardé.\n\n**Voir le transcript en ligne**",
-                url=transcript_url,
-                color=discord.Color.blue(),
-                timestamp=datetime.datetime.utcnow()
-            )
-            await log_channel.send(embed=log_embed)
-        
-        await interaction.followup.send(f"✅ Transcript généré avec succès ! URL : {transcript_url}", ephemeral=True)
-        return transcript_url
+            return None
 
     async def close_and_log_ticket(self, interaction):
         channel = interaction.channel
@@ -118,7 +107,7 @@ class CloseTicketView(View):
             user = None
         
         # On génère le transcript final avant de fermer
-        transcript_url = await self.generate_transcript(interaction, update_only=True)
+        transcript_url = await self.generate_and_save_transcript(interaction)
         if not transcript_url:
             # Si la génération du transcript échoue, on s'arrête pour ne pas perdre l'historique
             await interaction.followup.send("❌ La fermeture a été annulée car la sauvegarde du transcript a échoué.", ephemeral=True)
@@ -157,11 +146,10 @@ class CloseTicketView(View):
                         f"**Fermé par:** {interaction.user.mention}\n"
                         f"**Utilisateur:** {user.mention if user else 'Non trouvé'}"
                     ),
+                    url=transcript_url,
                     color=discord.Color.red(),
                     timestamp=datetime.datetime.utcnow()
                 )
-                if transcript_url:
-                    log_embed.url = transcript_url
                 await log_channel.send(embed=log_embed)
                 
         except discord.Forbidden:
@@ -173,6 +161,8 @@ class CloseTicketView(View):
 class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        # Ajoute la vue persistante pour qu'elle fonctionne après un redémarrage
+        self.bot.add_view(CloseTicketView(self))
 
     @app_commands.command(
         name="support",
@@ -263,8 +253,9 @@ class Support(commands.Cog):
             reason=f"Ticket créé par {interaction.user}"
         )
 
-        # Ajout de l'ID du salon au transcript pour les futures interactions
-        initial_transcript_data['channel_id'] = ticket_channel.id
+        # Mise à jour du transcript avec l'ID du salon
+        update_data = {"transcript_id": transcript_id, "channel_id": ticket_channel.id}
+        headers = {"X-API-Key": API_SECRET_KEY, "Content-Type": "application/json"}
         requests.post(f"{WEBAPP_URL}/api/transcripts", headers=headers, data=json.dumps(initial_transcript_data), timeout=10) # Update with channel_id
 
         embed = discord.Embed(
@@ -272,7 +263,7 @@ class Support(commands.Cog):
             description=(
                 f"Bonjour,\n\n"
                 "{interaction.user.mention} a besoin d'aide sur son serveur!\n"
-                "Pour discuter avec l'utilisateur, envoie simplement un message dans ce salon.\n\n"
+                "Pour discuter avec l'utilisateur, envoyez simplement un message dans ce salon.\n\n"
                 "Pour fermer le ticket, clique sur le bouton ci-dessous."
                 
             ),
@@ -324,7 +315,7 @@ class Support(commands.Cog):
         if command_guild.icon:
             embed.set_thumbnail(url=command_guild.icon.url)
 
-        view = CloseTicketView(self.bot)
+        view = CloseTicketView(self, transcript_id=transcript_id)
         
         await ticket_channel.send(embed=embed, view=view)
         await interaction.response.send_message(
@@ -347,7 +338,7 @@ class Support(commands.Cog):
                 title="🎫 Ticket de support ouvert",
                 description=(
                     f"Bonjour {interaction.user.mention},\n\n"
-                "Merci d'avoir ouvert un ticket de support. Un membre du staff va te répondre dès que possible.\n"
+                "Merci d'avoir ouvert un ticket de support. Un membre du staff va vous répondre dès que possible.\n"
                 "Pour discuter avec le staff, envoie simplement un message dans ce salon.\n\n"
                 "Pour fermer le ticket, clique sur le bouton ci-dessous.\n\n"
                 "Ce ticket est enregistré."
@@ -363,7 +354,7 @@ class Support(commands.Cog):
                 "Assure-toi que tes messages privés sont ouverts."
             )
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
 
@@ -437,4 +428,5 @@ class Support(commands.Cog):
                 await message.add_reaction("✅")
 
 async def setup(bot):
-    await bot.add_cog(Support(bot))
+    cog = Support(bot)
+    await bot.add_cog(cog)
