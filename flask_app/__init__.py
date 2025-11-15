@@ -40,7 +40,7 @@ def owner_required(f):
 
 def create_app(bot=None):
     """Crée et configure une instance de l'application Flask."""
-    app = Flask(__name__, template_folder='.')
+    app = Flask(__name__, template_folder='.', static_folder='../static')
 
     # Une clé secrète est nécessaire pour la sécurité des sessions et autres.
     # Il est recommandé de la définir via une variable d'environnement.
@@ -81,9 +81,7 @@ def create_app(bot=None):
 
     @app.route('/')
     def index():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard'))
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -183,6 +181,8 @@ def create_app(bot=None):
     @login_required
     def dashboard():
         """Affiche la liste de tous les transcripts."""
+        active_tickets = []
+        closed_tickets = []
         try:
             files = os.listdir(TRANSCRIPTS_DIR)
             # On ne garde que les fichiers .json et on les trie par date de modification
@@ -192,25 +192,38 @@ def create_app(bot=None):
                 reverse=True
             )
             
-            transcripts_info = []
             for filename in transcript_files:
                 try:
                     with open(os.path.join(TRANSCRIPTS_DIR, filename), 'r', encoding='utf-8') as f:
                         data = json.load(f)
-                        transcripts_info.append({
+                        
+                        ticket_info = {
                             'id': filename.replace('.json', ''),
                             'channel_name': data.get('channel_name', 'Inconnu'),
-                            'date': data.get('messages', [{}])[0].get('timestamp', 'N/A')
-                        })
+                            'date': data.get('messages', [{}])[0].get('timestamp', 'N/A'),
+                            'creator_id': data.get('creator_id')
+                        }
+
+                        # Vérifie si le ticket est actif
+                        is_active = False
+                        if bot:
+                            channel_id = data.get('channel_id')
+                            if channel_id and bot.get_channel(channel_id):
+                                is_active = True
+                        
+                        if is_active:
+                            active_tickets.append(ticket_info)
+                        else:
+                            closed_tickets.append(ticket_info)
+
                 except (json.JSONDecodeError, IndexError):
                     # Ignore les fichiers corrompus ou vides
                     continue
 
         except OSError:
-            transcripts_info = []
             flash("Impossible de lire le dossier des transcripts.", "danger")
 
-        return render_template('dashboard.html', transcripts=transcripts_info)
+        return render_template('dashboard.html', active_tickets=active_tickets, closed_tickets=closed_tickets)
 
     @app.route('/admin/staff', methods=['GET', 'POST'])
     @login_required

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} - Deckyo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1e1e2e;
+            --bg-light: #27293d;
+            --bg-lighter: #313244;
+            --primary: #89b4fa;
+            --text: #cdd6f4;
+            --text-dark: #a6adc8;
+            --red: #f38ba8;
+            --green: #a6e3a1;
+            --yellow: #f9e2af;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-light);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--bg-lighter);
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--bg-lighter);
+        }
+        .sidebar-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+        .sidebar-header h1 {
+            font-size: 20px;
+            margin: 0;
+            color: #fff;
+        }
+        .sidebar nav {
+            flex-grow: 1;
+        }
+        .sidebar nav a {
+            display: block;
+            color: var(--text-dark);
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar nav a:hover, .sidebar nav a.active {
+            background-color: var(--primary);
+            color: var(--bg-dark);
+        }
+        .sidebar .logout-btn {
+            background-color: var(--red);
+            color: var(--bg-dark);
+            text-align: center;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
+            <h1>Deckyo</h1>
+        </div>
+        <nav>
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Tableau de bord</a>
+            {% if current_user.role == 'owner' %}
+            <a href="{{ url_for('manage_staff') }}" class="{{ 'active' if request.endpoint == 'manage_staff' else '' }}">Gérer le Staff</a>
+            {% endif %}
+        </nav>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Déconnexion</a>
+    </div>
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
