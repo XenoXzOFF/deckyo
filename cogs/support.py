@@ -32,6 +32,16 @@ class CloseTicketView(View):
     async def generate_transcript(self, interaction):
         channel = interaction.channel
         await interaction.response.defer(ephemeral=True, thinking=True)
+
+        if not WEBAPP_URL or not API_SECRET_KEY:
+            await interaction.followup.send(
+                "❌ **Erreur de configuration du bot !**\n"
+                "L'URL du site web (`WEBAPP_URL`) ou la clé API (`API_SECRET_KEY`) n'est pas définie.\n"
+                "Le transcript ne peut pas être sauvegardé. Veuillez contacter un administrateur.",
+                ephemeral=True
+            )
+            return None
+
         messages_data = []
         async for message in channel.history(limit=None, oldest_first=True):
             messages_data.append({
