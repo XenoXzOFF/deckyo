@@ -4,7 +4,7 @@ import uuid
 import functools
 import asyncio
 from flask import Flask, request, jsonify, render_template, abort, redirect, url_for, flash, current_app
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -171,19 +171,25 @@ def create_app(bot=None):
                 return redirect(url_for('verify_token'))
             
             # Le token est valide, on redirige vers la page de définition du mot de passe
+            session['reset_token'] = token
             return redirect(url_for('reset_password', token=token))
 
         return render_template('verify_token.html')
 
-    @app.route('/reset_password/<token>', methods=['GET', 'POST'])
-    def reset_password(token):
+    @app.route('/reset_password', methods=['GET', 'POST'])
+    def reset_password():
         """Page pour définir le nouveau mot de passe."""
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
 
+        token = session.get('reset_token')
+        if not token:
+            flash("Aucune demande de réinitialisation active. Veuillez recommencer.", "warning")
+            return redirect(url_for('request_password_reset'))
+
         user = User.query.filter_by(reset_token=token).first()
         if not user or user.reset_token_expiration < datetime.datetime.utcnow():
-            flash("Le lien de réinitialisation est invalide ou a expiré.", "danger")
+            flash("Votre session de réinitialisation est invalide ou a expiré. Veuillez recommencer.", "danger")
             return redirect(url_for('request_password_reset'))
 
         if request.method == 'POST':
@@ -191,11 +197,12 @@ def create_app(bot=None):
             user.set_password(new_password)
             user.reset_token = None
             user.reset_token_expiration = None
+            session.pop('reset_token', None) # Nettoie la session
             db.session.commit()
             flash("Votre mot de passe a été réinitialisé avec succès ! Vous pouvez maintenant vous connecter.", "success")
             return redirect(url_for('login'))
         
-        return render_template('reset_password.html', token=token)
+        return render_template('reset_password.html')
 
     @app.route('/logout')
     @login_required
