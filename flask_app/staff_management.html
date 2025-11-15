@@ -1,77 +1,68 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion du Staff</title>
-    <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #36393f; color: #dcddde; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background-color: #2f3136; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #40444b; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 24px; color: #ffffff; }
-        .nav-link { padding: 8px 16px; background-color: #5865f2; color: white; text-decoration: none; border-radius: 4px; font-weight: 500; transition: background-color 0.2s; }
-        .nav-link:hover { background-color: #4752c4; }
-        h2 { color: #fff; border-bottom: 1px solid #40444b; padding-bottom: 10px; }
-        .form-container, .staff-list { background-color: #40444b; padding: 20px; border-radius: 5px; margin-top: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #b9bbbe; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #202225; border-radius: 4px; background-color: #2f3136; color: #dcddde; box-sizing: border-box; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; background-color: #5865f2; color: #ffffff; cursor: pointer; }
-        .staff-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #2f3136; }
-        .staff-item:last-child { border-bottom: none; }
-        .delete-btn { background-color: #f04747; }
-        .flash-message { padding: 10px; margin-bottom: 15px; border-radius: 4px; color: #fff; }
-        .flash-success { background-color: #28a745; }
-        .flash-danger { background-color: #dc3545; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Gestion du Staff</h1>
-            <a href="{{ url_for('dashboard') }}" class="nav-link">Retour au Dashboard</a>
-        </div>
+{% extends "base.html" %}
+{% block title %}Gestion du Staff{% endblock %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block content %}
+<style>
+    h2 { color: #fff; border-bottom: 1px solid var(--bg-lighter); padding-bottom: 10px; margin-top: 40px; margin-bottom: 20px; }
+    h2:first-of-type { margin-top: 0; }
+    .form-container, .staff-list { background-color: var(--bg-light); padding: 25px; border-radius: 8px; border: 1px solid var(--bg-lighter); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 500; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid var(--bg-lighter); border-radius: 6px; background-color: var(--bg-dark); color: var(--text); font-size: 14px; }
+    button { padding: 12px 20px; border: none; border-radius: 6px; background-color: var(--primary); color: var(--bg-dark); cursor: pointer; font-weight: 600; font-size: 14px; transition: background-color 0.2s; }
+    button:hover { background-color: #a6e3a1; }
+    .staff-list { margin-top: 30px; }
+    .staff-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--bg-lighter); }
+    .staff-item:last-child { border-bottom: none; }
+    .staff-item span { font-weight: 500; }
+    .delete-btn { background-color: var(--red); }
+    .delete-btn:hover { background-color: #e67a91; }
+    .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; color: var(--bg-dark); font-weight: 500; }
+    .flash-success { background-color: var(--green); }
+    .flash-danger { background-color: var(--red); }
+    .flash-info { background-color: var(--yellow); }
+</style>
 
-        <div class="form-container">
-            <h2>Ajouter un membre du staff</h2>
-            <form method="POST">
-                <div class="form-group">
-                    <label for="username">Nom d'utilisateur</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="discord_id">ID Discord</label>
-                    <input type="text" id="discord_id" name="discord_id" required pattern="\d{17,20}" title="Veuillez entrer un ID Discord valide.">
-                </div>
-                <button type="submit">Créer le compte</button>
-            </form>
-        </div>
+<h1>Gestion du Staff</h1>
 
-        <div class="staff-list">
-            <h2>Comptes Staff existants</h2>
-            {% for account in staff_accounts %}
-            <div class="staff-item">
-                <span>{{ account.username }}</span>
-                <form action="{{ url_for('delete_staff', user_id=account.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="delete-btn">Supprimer</button>
-                </form>
-            </div>
-            {% else %}
-            <p>Aucun compte staff trouvé.</p>
-            {% endfor %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="form-container">
+    <h2>Ajouter un membre du staff</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" name="username" required>
         </div>
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="discord_id">ID Discord</label>
+            <input type="text" id="discord_id" name="discord_id" required pattern="\d{17,20}" title="Veuillez entrer un ID Discord valide.">
+        </div>
+        <button type="submit">Créer le compte</button>
+    </form>
+</div>
+
+<div class="staff-list">
+    <h2>Comptes Staff existants</h2>
+    {% for account in staff_accounts %}
+    <div class="staff-item">
+        <span>{{ account.username }} ({{ account.discord_id }})</span>
+        <form action="{{ url_for('delete_staff', user_id=account.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer le compte de {{ account.username }} ?');">
+            <button type="submit" class="delete-btn">Supprimer</button>
+        </form>
     </div>
-</body>
-</html>
+    {% else %}
+    <p>Aucun compte staff trouvé.</p>
+    {% endfor %}
+</div>
+{% endblock %}
