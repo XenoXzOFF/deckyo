@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Transcripts</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #36393f;
+            color: #dcddde;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #40444b;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #ffffff;
+        }
+        .header-nav a {
+            margin-left: 15px;
+        }
+        .logout-btn {
+            padding: 8px 16px;
+            background-color: #f04747;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .logout-btn:hover {
+            background-color: #d84141;
+        }
+        .transcript-list {
+            list-style: none;
+            padding: 0;
+        }
+        .transcript-item {
+            background-color: #40444b;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .transcript-item a {
+            color: #7289da;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .transcript-item span {
+            color: #b9bbbe;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Liste des Transcripts</h1>
+            <div class="header-nav">
+                {% if current_user.role == 'owner' %}
+                <a href="{{ url_for('manage_staff') }}" class="logout-btn" style="background-color: #5865f2;">Gérer le Staff</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="logout-btn">Déconnexion</a>
+            </div>
+        </div>
+        <ul class="transcript-list">
+            {% for transcript in transcripts %}
+            <li class="transcript-item">
+                <a href="{{ url_for('view_transcript', transcript_id=transcript.id) }}">#{{ transcript.channel_name }}</a>
+                <span>Créé le {{ transcript.date | replace('T', ' ') | slice(0, 16) }}</span>
+            </li>
+            {% else %}
+            <li class="transcript-item">Aucun transcript trouvé.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
