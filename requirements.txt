@@ -1,4 +1,4 @@
 discord
 python-dotenv
 psutil
-webapp
+Flask

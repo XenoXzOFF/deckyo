@@ -1,11 +1,11 @@
 import os
+import threading
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands, tasks
-
 from webapp import create_app
-import threading
-# Charger les variables d'environnement
+
+# Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
 
 # Récupérer les variables d'environnement
@@ -19,13 +19,13 @@ intents.members = True
 PREFIX = os.getenv('PREFIX')
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-app = create_app()
 
 def run_flask_app():
-    # Le port est extrait de l'URL pour éviter les conflits
-    port = int(os.getenv('WEBAPP_URL').split(':')[-1])
-    # Utilise l'IP 0.0.0.0 pour être accessible depuis l'extérieur
-    app.run(host='0.0.0.0', port=port, debug=False)
+    """Initialise et lance l'application Flask."""
+    host = '85.215.131.70'
+    port = 13966
+    flask_app = create_app()
+    flask_app.run(host=host, port=port, debug=False)
 
 @bot.event
 async def on_ready():
@@ -57,8 +57,10 @@ async def on_message(message):
 
 if __name__ == "__main__":
     # Lance le site web dans un thread séparé
+    print("🚀 Démarrage du site web...")
     flask_thread = threading.Thread(target=run_flask_app)
     flask_thread.daemon = True
     flask_thread.start()
-    print("🚀 Site web démarré...")
+    
+    print("🤖 Démarrage du bot Discord...")
     bot.run(TOKEN)
