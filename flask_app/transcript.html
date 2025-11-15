@@ -140,7 +140,7 @@
         </div>
         {% endfor %}
 
-        {% if current_user.is_authenticated and (current_user.role == 'staff' or current_user.role == 'owner') %}
+        {% if is_channel_active and current_user.is_authenticated and (current_user.role == 'staff' or current_user.role == 'owner') %}
         <div class="reply-form">
             <form action="{{ url_for('send_ticket_message', transcript_id=transcript_id) }}" method="POST">
                 <textarea name="message" placeholder="Écrire une réponse dans le ticket..." required></textarea>
