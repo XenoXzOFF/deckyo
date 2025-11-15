@@ -4,7 +4,7 @@ import uuid
 import functools
 import asyncio
 from flask import Flask, request, jsonify, render_template, abort, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user, current_app
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -132,16 +132,15 @@ def create_app(bot=None):
                 async def send_reset_code():
                     try:
                         formatted_code = f"{code[:4]}-{code[4:]}"
-                        discord_user = await bot.fetch_user(user.discord_id)
-                        if discord_user:
-                            embed = discord.Embed(
-                                title="🔑 Réinitialisation de mot de passe",
-                                description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.",
-                                color=discord.Color.orange(),
-                            )
-                            embed.add_field(name="Votre code", value=f"```{formatted_code}```", inline=False)
-                            await discord_user.send(embed=embed)
-                    except Exception as e:
+                        discord_user = await bot.fetch_user(user.discord_id) # Tente de récupérer l'utilisateur
+                        embed = discord.Embed(
+                            title="🔑 Réinitialisation de mot de passe",
+                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.",
+                            color=discord.Color.orange(),
+                        )
+                        embed.add_field(name="Votre code", value=f"```{formatted_code}```", inline=False)
+                        await discord_user.send(embed=embed) # Envoie le message
+                    except (discord.NotFound, discord.Forbidden, Exception) as e:
                         print(f"Erreur lors de l'envoi du code de réinitialisation à {user.username}: {e}")
 
                 if bot:
@@ -233,9 +232,9 @@ def create_app(bot=None):
 
                         # Vérifie si le ticket est actif
                         is_active = False
-                        if bot:
+                        if app.config.get('BOT_INSTANCE'):
                             channel_id = data.get('channel_id')
-                            if channel_id and bot.get_channel(channel_id):
+                            if channel_id and app.config.get('BOT_INSTANCE').get_channel(channel_id):
                                 is_active = True
                         
                         if is_active:
@@ -400,7 +399,7 @@ def create_app(bot=None):
     @owner_required
     def delete_transcript(transcript_id):
         """Supprime un fichier de transcript (owner uniquement)."""
-        # Sécurité : Valider le nom du fichier pour éviter les attaques de type "Path Traversal"
+        # Sécurité renforcée : Valider le nom du fichier pour éviter les attaques de type "Path Traversal"
         if not transcript_id.isalnum() and '-' not in transcript_id:
             abort(400, "ID de transcript invalide.")
 
