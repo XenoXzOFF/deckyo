@@ -280,7 +280,6 @@ class Support(commands.Cog):
             timestamp=datetime.datetime.utcnow()
         )
         embed.set_footer(text=f"Demandé par {interaction.user}", icon_url=interaction.user.display_avatar)
-
         view = CloseTicketView(self, transcript_id=transcript_id)
         
         await ticket_channel.send(embed=embed, view=view)

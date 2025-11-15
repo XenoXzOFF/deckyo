@@ -107,10 +107,6 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="login-header">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="width: 50px; height: 50px;">
-            <h1>Accès au Dashboard</h1>
-        </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -118,6 +114,10 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="width: 50px; height: 50px;">
+            <h1>Accès au Dashboard</h1>
+        </div>
         <form method="POST">
             <div class="form-group">
                 <label for="username">Nom d'utilisateur</label>

@@ -4,7 +4,7 @@ import uuid
 import functools
 import asyncio
 from flask import Flask, request, jsonify, render_template, abort, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user, current_app
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -133,14 +133,14 @@ def create_app(bot=None):
                     try:
                         formatted_code = f"{code[:4]}-{code[4:]}"
                         discord_user = await bot.fetch_user(user.discord_id) # Tente de récupérer l'utilisateur
-                        embed = discord.Embed(
-                            title="🔑 Réinitialisation de mot de passe",
-                            description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.",
-                            color=discord.Color.orange(),
-                        )
-                        embed.add_field(name="Votre code", value=f"```{formatted_code}```", inline=False)
-                        await discord_user.send(embed=embed) # Envoie le message
-                    except (discord.NotFound, discord.Forbidden, Exception) as e:
+                        if discord_user:
+                            embed = discord.Embed(
+                                title="🔑 Réinitialisation de mot de passe",
+                                description=f"Bonjour {user.username},\n\nVoici votre code à usage unique pour réinitialiser votre mot de passe. Ce code expirera dans 5 minutes.\n\n**Code :**\n```{formatted_code}```",
+                                color=discord.Color.orange(),
+                            )
+                            await discord_user.send(embed=embed)
+                    except Exception as e:
                         print(f"Erreur lors de l'envoi du code de réinitialisation à {user.username}: {e}")
 
                 if bot:
@@ -232,9 +232,9 @@ def create_app(bot=None):
 
                         # Vérifie si le ticket est actif
                         is_active = False
-                        if app.config.get('BOT_INSTANCE'):
+                        if current_app.config.get('BOT_INSTANCE'):
                             channel_id = data.get('channel_id')
-                            if channel_id and app.config.get('BOT_INSTANCE').get_channel(channel_id):
+                            if channel_id and current_app.config.get('BOT_INSTANCE').get_channel(channel_id):
                                 is_active = True
                         
                         if is_active:
@@ -385,7 +385,7 @@ def create_app(bot=None):
 
         # Vérifie si le salon du ticket est toujours actif
         is_channel_active = False
-        bot = app.config.get('BOT_INSTANCE')
+        bot = current_app.config.get('BOT_INSTANCE')
         if bot:
             channel_id = transcript_data.get('channel_id')
             # bot.get_channel() est une recherche rapide dans le cache
@@ -419,7 +419,7 @@ def create_app(bot=None):
     @login_required
     def send_ticket_message(transcript_id):
         """Envoie un message dans un ticket depuis le web."""
-        bot = app.config.get('BOT_INSTANCE')
+        bot = current_app.config.get('BOT_INSTANCE')
         if not bot:
             flash("Le bot n'est pas connecté, impossible d'envoyer le message.", "danger")
             return redirect(url_for('view_transcript', transcript_id=transcript_id))
@@ -460,7 +460,7 @@ def create_app(bot=None):
     @login_required
     def close_ticket_from_web(transcript_id):
         """Ferme un ticket Discord depuis le dashboard."""
-        bot = app.config.get('BOT_INSTANCE')
+        bot = current_app.config.get('BOT_INSTANCE')
         if not bot:
             flash("Le bot n'est pas connecté, impossible de fermer le ticket.", "danger")
             return redirect(url_for('view_transcript', transcript_id=transcript_id))
