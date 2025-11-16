@@ -13,9 +13,11 @@ bcrypt = Bcrypt()
 def create_app(bot, dm_sender):
     """Crée et configure l'application Flask."""
     # Modification cruciale : on spécifie explicitement où se trouvent les templates.
-    # Cela résout les erreurs 'TemplateNotFound' si la détection automatique échoue.
-    # __name__ est 'flask_app', donc il cherchera dans 'flask_app/templates'.
-    app = Flask(__name__, template_folder='templates')
+    # On utilise un chemin absolu pour être certain que le serveur trouve le dossier,
+    # peu importe comment l'application est lancée.
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    template_dir = os.path.join(base_dir, 'templates')
+    app = Flask(__name__, template_folder=template_dir)
     
     # Configuration de l'application
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'une-cle-secrete-par-defaut-a-changer')
