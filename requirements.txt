@@ -5,3 +5,4 @@ Flask
 Flask-Login
 Flask-SQLAlchemy
 requests
+Flask-WTF
