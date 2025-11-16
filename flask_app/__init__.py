@@ -2,7 +2,7 @@ import os
 import asyncio
 from flask import Flask, render_template, request, redirect, url_for, flash, current_app
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, login_required
 
 # Initialisation des extensions (sans les lier à une app pour l'instant)
 db = SQLAlchemy()
@@ -40,7 +40,15 @@ def create_app(bot, dm_sender):
 
     @app.route('/')
     def home():
-        return "<h1>Le site web est en ligne !</h1>"
+        # Cette route redirigera vers la page de connexion si l'utilisateur n'est pas authentifié,
+        # ou vers le dashboard s'il l'est.
+        return redirect(url_for('dashboard'))
+
+    @app.route('/dashboard')
+    @login_required
+    def dashboard():
+        # Vous devez créer un fichier dashboard.html dans le dossier templates
+        return render_template('dashboard.html', title='Tableau de bord')
 
     @app.route('/request_reset', methods=['GET', 'POST'])
     def request_reset():
