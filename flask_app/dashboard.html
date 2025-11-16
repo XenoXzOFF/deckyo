@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }} - Mon Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <h1>Bienvenue sur votre tableau de bord !</h1>
-    <p>Vous êtes bien connecté.</p>
+{% extends "layout.html" %}
+{% block content %}
+    <h1>Bienvenue, {{ current_user.username }} !</h1>
+    <p>Vous êtes bien connecté à votre tableau de bord.</p>
+    
     <!-- Ajoutez ici le contenu de votre dashboard -->
-</body>
-</html>
+
+    <div class="border-top pt-3" style="margin-top: 2rem;">
+        <a href="{{ url_for('logout') }}" class="back-link">Se déconnecter</a>
+    </div>
+{% endblock content %}

@@ -1,50 +1,20 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mot de passe oublié</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --bg-dark: #1e1e2e; --bg-light: #27293d; --bg-lighter: #313244; --primary: #89b4fa; --text: #cdd6f4; --text-dark: #a6adc8; --red: #f38ba8; --green: #a6e3a1; --yellow: #f9e2af; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background-color: var(--bg-light); padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--bg-lighter); }
-        h1 { color: #fff; margin-bottom: 10px; }
-        p { color: var(--text-dark); margin-bottom: 20px; font-size: 14px; }
-        .form-group { margin-bottom: 15px; text-align: left; }
-        label { display: block; margin-bottom: 5px; color: var(--text-dark); font-size: 14px; }
-        input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--bg-lighter); border-radius: 4px; background-color: var(--bg-dark); color: var(--text); box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: var(--bg-dark); font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #a6e3a1; color: var(--bg-dark); }
-        .back-link { display: block; margin-top: 20px; color: var(--primary); text-decoration: none; font-size: 14px; }
-        .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: 500; }
-        .flash-danger { background-color: var(--bg-lighter); color: var(--red); border: 1px solid var(--red); }
-        .flash-info { background-color: var(--bg-lighter); color: var(--yellow); border: 1px solid var(--yellow); }
-    </style>
-</head>
-<body>
-    <div class="container">
+{% extends "layout.html" %}
+{% block content %}
+    <div class="content-section">
         <h1>Réinitialiser le mot de passe</h1>
         <p>Entrez votre ID Discord. Si un compte correspondant est trouvé, un code de réinitialisation vous sera envoyé par message privé.</p>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
         <form method="POST" action="">
             {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                <div class="form-group">
+                    {{ form.discord_id.label(class="form-control-label") }}
+                    {{ form.discord_id(class="form-control form-control-lg") }}
+                </div>
+            </fieldset>
             <div class="form-group">
-                {{ form.discord_id.label(class="form-control-label") }}
-                {{ form.discord_id(class="form-control form-control-lg") }}
+                {{ form.submit(class="btn") }}
             </div>
-            {{ form.submit(class="btn btn-outline-info") }}
         </form>
         <a href="{{ url_for('login') }}" class="back-link">&larr; Retour à la connexion</a>
     </div>
-</body>
-</html>
+{% endblock content %}

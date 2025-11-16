@@ -59,6 +59,10 @@ def create_app(bot, dm_sender):
             return redirect(url_for('dashboard'))
         form = RegistrationForm()
         if form.validate_on_submit():
+            # La validation de l'unicité du username et du discord_id
+            # est maintenant gérée directement dans la classe RegistrationForm.
+            # Si le code arrive ici, c'est que les données sont valides.
+
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user = User(username=form.username.data, discord_id=form.discord_id.data, password=hashed_password)
             db.session.add(user)
