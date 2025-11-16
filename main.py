@@ -30,6 +30,25 @@ def run_flask_app(bot_instance):
     flask_app = create_app(bot=bot_instance)
     flask_app.run(host=host, port=port, debug=False)
 
+async def send_dm_to_user(user_id: int, message: str):
+    """
+    Récupère un utilisateur par son ID et lui envoie un message privé.
+    Cette fonction est asynchrone et doit être appelée depuis la boucle d'événements du bot.
+    """
+    try:
+        # bot.fetch_user() est plus fiable que bot.get_user() car il fait un appel API
+        # si l'utilisateur n'est pas dans le cache.
+        user = await bot.fetch_user(user_id)
+        if user:
+            await user.send(message)
+            print(f"✅ Message de réinitialisation envoyé à l'utilisateur {user_id}.")
+            return True
+    except discord.errors.Forbidden:
+        print(f"⚠️ Erreur : Impossible d'envoyer un MP à l'utilisateur {user_id}. Il a peut-être bloqué les MP du serveur.")
+    except Exception as e:
+        print(f"⚠️ Une erreur inattendue est survenue lors de l'envoi du MP à {user_id}: {e}")
+    return False
+
 @bot.event
 async def on_ready():
     print(f"✅ Connecté comme {bot.user}")
