@@ -4,15 +4,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, cur
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
-# Importation de la fonction d'envoi de MP depuis le fichier principal
-# Le '.' devant main est crucial car nous sommes dans un paquet.
-from ..main import send_dm_to_user
-
 # Initialisation des extensions (sans les lier à une app pour l'instant)
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app(bot):
+def create_app(bot, dm_sender):
     """Crée et configure l'application Flask."""
     app = Flask(__name__)
     
@@ -24,6 +20,8 @@ def create_app(bot):
     
     # Stocker l'instance du bot dans la configuration de l'application pour y accéder plus tard
     app.config['BOT'] = bot
+    # Stocker la fonction d'envoi de DM pour éviter les imports circulaires
+    app.config['DM_SENDER'] = dm_sender
 
     # Initialiser les extensions avec l'application
     db.init_app(app)
@@ -52,6 +50,7 @@ def create_app(bot):
             if user:
                 # Récupérer l'instance du bot depuis la config de l'app
                 bot_instance = current_app.config['BOT']
+                dm_sender_func = current_app.config['DM_SENDER']
                 
                 # Générer un token/code (pour cet exemple, un code simple)
                 import random, string
@@ -66,7 +65,7 @@ def create_app(bot):
 
                 # C'est ici que Flask demande au bot d'envoyer le MP
                 asyncio.run_coroutine_threadsafe(
-                    send_dm_to_user(int(user.discord_id), message_content),
+                    dm_sender_func(int(user.discord_id), message_content),
                     bot_instance.loop
                 )
 

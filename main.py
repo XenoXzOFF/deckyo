@@ -26,8 +26,8 @@ def run_flask_app(bot_instance):
     # depuis l'extérieur de son conteneur.
     host = '0.0.0.0'
     # Le port est souvent fourni par l'hébergeur via une variable d'environnement.
-    port = int(os.getenv('PORT', 13966))
-    flask_app = create_app(bot=bot_instance)
+    port = int(os.getenv('PORT', 13966)) 
+    flask_app = create_app(bot=bot_instance, dm_sender=send_dm_to_user)
     flask_app.run(host=host, port=port, debug=False)
 
 async def send_dm_to_user(user_id: int, message: str):
