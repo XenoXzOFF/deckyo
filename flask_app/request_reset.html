@@ -27,8 +27,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Mot de passe oublié</h1>
-        <p>Entrez votre nom d'utilisateur. Si un compte correspondant est trouvé, un code de réinitialisation sera envoyé à l'utilisateur Discord associé.</p>
+        <h1>Réinitialiser le mot de passe</h1>
+        <p>Entrez votre ID Discord. Si un compte correspondant est trouvé, un code de réinitialisation vous sera envoyé par message privé.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -36,12 +36,13 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
             <div class="form-group">
-                <label for="username">Nom d'utilisateur</label>
-                <input type="text" id="username" name="username" required>
+                {{ form.discord_id.label(class="form-control-label") }}
+                {{ form.discord_id(class="form-control form-control-lg") }}
             </div>
-            <button type="submit">Envoyer le code</button>
+            {{ form.submit(class="btn btn-outline-info") }}
         </form>
         <a href="{{ url_for('login') }}" class="back-link">&larr; Retour à la connexion</a>
     </div>
