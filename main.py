@@ -1,10 +1,17 @@
 import os
 import threading
+import logging
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands, tasks
 from flask_app import create_app
 
+# --- Configuration du Logging ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
 
@@ -28,6 +35,10 @@ def run_flask_app(bot_instance):
     # Le port est souvent fourni par l'hébergeur via une variable d'environnement.
     port = int(os.getenv('PORT', 13966)) 
     flask_app = create_app(bot=bot_instance, dm_sender=send_dm_to_user)
+    # Désactiver le logger par défaut de Werkzeug pour éviter le double affichage
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    
     flask_app.run(host=host, port=port, debug=False)
 
 async def send_dm_to_user(user_id: int, message: str):
@@ -41,31 +52,33 @@ async def send_dm_to_user(user_id: int, message: str):
         user = await bot.fetch_user(user_id)
         if user:
             await user.send(message)
-            print(f"✅ Message de réinitialisation envoyé à l'utilisateur {user_id}.")
+            logging.info(f"Message de réinitialisation envoyé avec succès à l'utilisateur {user_id}.")
             return True
     except discord.errors.Forbidden:
-        print(f"⚠️ Erreur : Impossible d'envoyer un MP à l'utilisateur {user_id}. Il a peut-être bloqué les MP du serveur.")
+        logging.warning(f"Impossible d'envoyer un MP à l'utilisateur {user_id}. Il a probablement bloqué les MP.")
+    except discord.errors.NotFound:
+        logging.error(f"Impossible d'envoyer un MP : l'utilisateur avec l'ID {user_id} n'a pas été trouvé.")
     except Exception as e:
-        print(f"⚠️ Une erreur inattendue est survenue lors de l'envoi du MP à {user_id}: {e}")
+        logging.error(f"Une erreur inattendue est survenue lors de l'envoi du MP à {user_id}: {e}")
     return False
 
 @bot.event
 async def on_ready():
-    print(f"✅ Connecté comme {bot.user}")
+    logging.info(f"Connecté en tant que {bot.user}")
 
     for filename in os.listdir("./cogs"):
         if filename.endswith(".py"):
             try:
                 await bot.load_extension(f"cogs.{filename[:-3]}")
-                print(f"🔹 Module chargé : {filename}")
+                logging.info(f"Module chargé : {filename}")
             except Exception as e:
-                print(f"⚠️ Erreur lors du chargement de {filename} : {e}")
+                logging.error(f"Erreur lors du chargement de {filename} : {e}")
 
     try:
         synced = await bot.tree.sync()
-        print(f"✅ {len(synced)} commandes slash synchronisées !")
+        logging.info(f"{len(synced)} commandes slash synchronisées !")
     except Exception as e:
-        print(f"⚠️ Erreur de synchronisation des commandes slash : {e}")
+        logging.error(f"Erreur de synchronisation des commandes slash : {e}")
 
 @bot.event
 async def on_message(message):
@@ -79,10 +92,10 @@ async def on_message(message):
 
 if __name__ == "__main__":
     # Lance le site web dans un thread séparé
-    print("🚀 Démarrage du site web...")
+    logging.info("🚀 Démarrage du site web...")
     flask_thread = threading.Thread(target=run_flask_app, args=(bot,))
     flask_thread.daemon = True
     flask_thread.start()
     
-    print("🤖 Démarrage du bot Discord...")
+    logging.info("🤖 Démarrage du bot Discord...")
     bot.run(TOKEN)
