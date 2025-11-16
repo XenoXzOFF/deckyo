@@ -16,7 +16,13 @@ def create_app(bot, dm_sender):
     # On utilise un chemin absolu pour être certain que le serveur trouve le dossier,
     # peu importe comment l'application est lancée.
     base_dir = os.path.abspath(os.path.dirname(__file__))
-    template_dir = os.path.join(base_dir, 'templates')
+    template_dir = os.path.join(base_dir, 'templates') 
+
+    # --- LIGNE DE DÉBOGAGE POUR FORCER LA VÉRITÉ ---
+    # Affiche le chemin exact que le serveur essaie d'utiliser.
+    print(f"--- CHEMIN DES TEMPLATES UTILISÉ : {template_dir} ---")
+    print(f"--- LE FICHIER LOGIN.HTML EXISTE-T-IL ? : {os.path.exists(os.path.join(template_dir, 'login.html'))} ---")
+
     app = Flask(__name__, template_folder=template_dir)
     
     # Configuration de l'application
