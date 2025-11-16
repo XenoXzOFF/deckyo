@@ -30,6 +30,8 @@ def create_app(bot, dm_sender):
     bcrypt.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login' # Redirige les utilisateurs non connectés vers la page de login
+    login_manager.login_message_category = 'info'
+    login_manager.login_message = "Veuillez vous connecter pour accéder à cette page."
 
     # Importation des modèles et formulaires
     from .models import User
@@ -120,7 +122,7 @@ def create_app(bot, dm_sender):
                 )
 
                 flash('Un code de réinitialisation vous a été envoyé par MP sur Discord.', 'info')
-                return redirect(url_for('home')) # Rediriger vers une page de vérification du token
+                return redirect(url_for('login'))
             else:
                 flash('Aucun compte n\'est associé à cet ID Discord.', 'danger')
                 

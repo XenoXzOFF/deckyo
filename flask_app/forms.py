@@ -11,7 +11,7 @@ class RegistrationForm(FlaskForm):
     username = StringField('Nom d\'utilisateur', validators=[DataRequired(), Length(min=2, max=25)])
     discord_id = StringField('Votre ID Discord', validators=[DataRequired(), Regexp(r'^\d+$', message="L'ID Discord ne doit contenir que des chiffres.")])
     password = PasswordField('Mot de passe', validators=[DataRequired(), Length(min=6)])
-    confirm_password = PasswordField('Confirmer le mot de passe', validators=[DataRequired(), EqualTo('password')])
+    confirm_password = PasswordField('Confirmer le mot de passe', validators=[DataRequired(), EqualTo('password', message='Les mots de passe doivent correspondre.')])
     submit = SubmitField('S\'inscrire')
 
     def validate_username(self, username):
