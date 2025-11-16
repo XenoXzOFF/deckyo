@@ -23,7 +23,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix=PREFIX, intents=intents)
+bot = commands.Bot(command_prefix="-", intents=intents)
 
 def run_flask_app(bot_instance):
     """Initialise et lance l'application Flask."""

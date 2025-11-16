@@ -128,7 +128,7 @@ def create_app(bot, dm_sender):
                 )
 
                 flash('Un code de réinitialisation vous a été envoyé par MP sur Discord.', 'info')
-                return redirect(url_for('login'))
+                return redirect(url_for('login')) # Rediriger vers la page de connexion après la demande
             else:
                 flash('Aucun compte n\'est associé à cet ID Discord.', 'danger')
                 
